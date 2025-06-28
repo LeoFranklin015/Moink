@@ -1,3 +1,4 @@
+"use client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo, type FC, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
