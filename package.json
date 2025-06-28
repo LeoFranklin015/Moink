@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@mocanetwork/air-credential-sdk": "^0.0.7-beta.1",
     "@mocanetwork/airkit": "^1.4.2",
     "@mocanetwork/airkit-connector": "^1.4.2",
     "@tanstack/react-query": "^5.81.5",

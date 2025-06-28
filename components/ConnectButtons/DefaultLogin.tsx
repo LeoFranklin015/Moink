@@ -6,7 +6,6 @@ import { Button } from "../common/Button";
 export const DefaultLogin = () => {
   const { connect, isPending: isConnecting } = useConnect();
   const config = useConfig();
-
   return (
     <div className="max-w-md mx-auto">
       <Button
@@ -14,7 +13,6 @@ export const DefaultLogin = () => {
           const airConnector = config.connectors.find(
             (connector) => connector?.isMocaNetwork
           );
-
           connect({
             connector: airConnector!,
           });

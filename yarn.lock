@@ -435,6 +435,11 @@
     semver "^7.5.4"
     uuid "^9.0.1"
 
+"@mocanetwork/air-credential-sdk@^0.0.7-beta.1":
+  version "0.0.7-beta.1"
+  resolved "https://registry.npmjs.org/@mocanetwork/air-credential-sdk/-/air-credential-sdk-0.0.7-beta.1.tgz"
+  integrity sha512-Dhc/ruFRLkYHHoReYMqQbOCN45hz+B/fYa3cw0GfyKyIIvhgpPr0yliOvm6JOvLScKEc1XnB7S8ZyWmfNZpisg==
+
 "@mocanetwork/airkit-connector@^1.4.2":
   version "1.4.2"
   resolved "https://registry.npmjs.org/@mocanetwork/airkit-connector/-/airkit-connector-1.4.2.tgz"
