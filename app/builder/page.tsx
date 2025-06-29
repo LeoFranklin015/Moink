@@ -10,6 +10,7 @@ import { ConfigPanel } from "@/components/ConfigPanel";
 export interface FrameConfig {
   logo: string;
   backgroundColor: string;
+  backgroundImage: string;
   title: string;
   description: string;
   credentialId: string;
@@ -25,15 +26,16 @@ export interface FrameConfig {
 export default function FrameBuilder() {
   const [config, setConfig] = useState<FrameConfig>({
     logo: "",
-    backgroundColor: "#1a2b42",
-    title: "KYC Verification",
+    backgroundColor: "#000000",
+    backgroundImage: "",
+    title: "EXCLUSIVE ACCESS",
     description:
-      "Complete your Know Your Customer verification to access premium features and secure transactions.",
-    credentialId: "kyc-verification-v1",
+      "Join the elite community and unlock premium features. Verify your identity to access exclusive content and special privileges.",
+    credentialId: "exclusive-access-v1",
     verificationRequirement: "Your age is 18 or above",
-    buttonText: "Verify Identity",
-    buttonColor: "#16a34a",
-    buttonHoverColor: "#15803d",
+    buttonText: "GET EXCLUSIVE ACCESS",
+    buttonColor: "#ff6b35",
+    buttonHoverColor: "#e55a2b",
     contractAddress: "0x1234567890123456789012345678901234567890",
     abi: JSON.stringify(
       [

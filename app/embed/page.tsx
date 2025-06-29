@@ -35,10 +35,18 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 export default function EmbedPage() {
+  // Use absolute URL for iframe source to work properly when embedded
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://moink.vercel.app"
+      : "http://localhost:3000");
+  const frameUrl = `${baseUrl}/frame`;
+
   return (
     <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
       <iframe
-        src={`/frame`}
+        src={frameUrl}
         style={{
           width: "100%",
           height: "100%",

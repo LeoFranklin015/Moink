@@ -24,6 +24,19 @@ export function ConfigPanel({ config, updateConfig }: ConfigPanelProps) {
     }
   };
 
+  const handleBackgroundUpload = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        updateConfig("backgroundImage", e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const colorPresets = [
     "#1a2b42",
     "#2d1b69",
@@ -75,6 +88,34 @@ export function ConfigPanel({ config, updateConfig }: ConfigPanelProps) {
                     src={config.logo || "/placeholder.svg"}
                     alt="Logo"
                     className="h-8 w-8 object-contain rounded border border-white/[0.08]"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Background Image */}
+            <div className="space-y-2">
+              <Label className="text-xs text-white/70">Background Image</Label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBackgroundUpload}
+                  className="hidden"
+                  id="background-upload"
+                />
+                <label
+                  htmlFor="background-upload"
+                  className="flex-1 flex items-center justify-center h-8 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-md cursor-pointer transition-colors"
+                >
+                  <Upload className="h-3 w-3 text-white/60 mr-1.5" />
+                  <span className="text-xs text-white/70">Upload</span>
+                </label>
+                {config.backgroundImage && (
+                  <img
+                    src={config.backgroundImage || "/placeholder.svg"}
+                    alt="Background"
+                    className="h-8 w-12 object-cover rounded border border-white/[0.08]"
                   />
                 )}
               </div>
