@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { Navbar } from "@/components/Navbar";
-import { VerifyButton } from "@/components/VerifyButton";
 import DonatePage from "../frame/page";
 
 export async function generateMetadata(): Promise<Metadata> {
