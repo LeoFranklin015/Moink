@@ -4,13 +4,21 @@ import Link from "next/link";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
-import { useAccount, useDisconnect } from "wagmi";
-import { DefaultLogin } from "@/components/ConnectButtons/DefaultLogin";
+import { useAppContext, ENV_OPTIONS } from "../contexts/AppContext";
 
 export const TransparentNavbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { address, isConnected, isConnecting } = useAccount();
-  const { disconnect, isPending: isDisconnecting } = useDisconnect();
+  const {
+    isLoading,
+    isInitialized,
+    isLoggedIn,
+    userAddress,
+    handleLogin,
+    handleLogout,
+    currentEnv,
+    setCurrentEnv,
+  } = useAppContext();
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -40,6 +48,107 @@ export const TransparentNavbar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleLogoutClick = () => {
+    handleLogout();
+    setIsDropdownOpen(false);
+    setMobileMenuOpen(false);
+  };
+
+  const handleLoginClick = () => {
+    handleLogin();
+    setMobileMenuOpen(false);
+  };
+
+  const LoginButton = ({ isMobile = false }) => {
+    if (!mounted || !isInitialized) {
+      return (
+        <Button
+          disabled
+          className={`bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm ${
+            isMobile ? "w-full justify-center" : ""
+          }`}
+          size="sm"
+        >
+          <svg
+            className="animate-spin -ml-1 mr-2 h-4 w-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          Initializing...
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        onClick={handleLoginClick}
+        disabled={isLoading}
+        className={`bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 ${
+          isMobile ? "w-full justify-center" : ""
+        }`}
+        size="sm"
+      >
+        {isLoading ? (
+          <>
+            <svg
+              className="animate-spin -ml-1 mr-2 h-4 w-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Connecting...
+          </>
+        ) : (
+          <>
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+            Connect Wallet
+          </>
+        )}
+      </Button>
+    );
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-4 lg:px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm">
@@ -85,23 +194,7 @@ export const TransparentNavbar = () => {
 
         {/* Desktop Wallet Connection */}
         <div className="hidden md:flex items-center space-x-4">
-          {!mounted ? (
-            <Button
-              disabled
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm"
-              size="sm"
-            >
-              Connecting...
-            </Button>
-          ) : isConnecting ? (
-            <Button
-              disabled
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm"
-              size="sm"
-            >
-              Connecting...
-            </Button>
-          ) : isConnected && address ? (
+          {isLoggedIn && userAddress ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -109,7 +202,7 @@ export const TransparentNavbar = () => {
               >
                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span className="text-sm font-mono text-white">
-                  {formatAddress(address)}
+                  {formatAddress(userAddress)}
                 </span>
                 <svg
                   className={`w-4 h-4 text-white/70 transition-transform duration-200 ${
@@ -130,29 +223,51 @@ export const TransparentNavbar = () => {
 
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-black/80 backdrop-blur-md rounded-lg border border-white/20 py-1 z-50">
+                <div className="absolute right-0 mt-2 w-64 bg-black/80 backdrop-blur-md rounded-lg border border-white/20 py-1 z-50">
                   <div className="px-4 py-2 border-b border-white/10">
-                    <p className="text-xs text-white/60">Connected Address</p>
-                    <p className="text-sm font-mono text-white break-all">
-                      {address}
-                    </p>
+                    <div className="text-sm font-medium text-white">
+                      AIR Wallet
+                    </div>
+                    <div className="text-xs text-white/60">Connected</div>
+                    <div className="mt-1">
+                      <div className="text-xs text-white/60">Address:</div>
+                      <div className="text-xs font-mono text-white/90 break-all">
+                        {userAddress}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2 border-b border-white/10">
+                    <div className="text-xs text-white/60 mb-1">
+                      AIRKit Env:
+                    </div>
+                    <select
+                      className="text-xs px-2 py-1 bg-black/60 border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/20 w-full text-white"
+                      value={currentEnv}
+                      onChange={(e) => setCurrentEnv(e.target.value as any)}
+                    >
+                      {ENV_OPTIONS.map((opt) => (
+                        <option
+                          key={opt.value}
+                          value={opt.value}
+                          className="bg-black text-white"
+                        >
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <button
-                    onClick={() => {
-                      disconnect();
-                      setIsDropdownOpen(false);
-                    }}
-                    disabled={isDisconnecting}
-                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleLogoutClick}
+                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors duration-200"
                   >
-                    {isDisconnecting ? "Disconnecting..." : "Disconnect"}
+                    Disconnect
                   </button>
                 </div>
               )}
             </div>
           ) : (
             <div className="flex items-center space-x-4">
-              <DefaultLogin />
+              <LoginButton />
             </div>
           )}
         </div>
@@ -177,81 +292,84 @@ export const TransparentNavbar = () => {
             <Link
               href="#"
               className="text-white/90 hover:text-white text-sm font-medium"
+              onClick={() => setMobileMenuOpen(false)}
             >
               How It Works
             </Link>
             <Link
               href="#"
               className="text-white/90 hover:text-white text-sm font-medium"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Use Cases
             </Link>
             <Link
               href="#"
               className="text-white/90 hover:text-white text-sm font-medium"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Moca Identity
             </Link>
             <Link
               href="#"
               className="text-white/90 hover:text-white text-sm font-medium"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
             </Link>
             <Link
               href="#"
               className="text-white/90 hover:text-white text-sm font-medium"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Docs
             </Link>
             <hr className="border-white/20" />
 
             {/* Mobile Wallet Connection */}
-            {!mounted ? (
-              // Show loading state during hydration to match server render
-              <div className="space-y-4">
-                <div className="w-full h-12 bg-white/10 rounded-lg animate-pulse"></div>
-                <Button
-                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm w-full justify-center"
-                  size="sm"
-                >
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            ) : isConnecting ? (
-              <Button
-                disabled
-                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm w-full justify-center"
-                size="sm"
-              >
-                Connecting...
-              </Button>
-            ) : isConnected && address ? (
+            {isLoggedIn && userAddress ? (
               <div className="space-y-2">
                 <div className="flex items-center space-x-2 px-4 py-2 bg-white/5 rounded-lg">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                   <span className="text-sm font-mono text-white/90">
-                    {formatAddress(address)}
+                    {formatAddress(userAddress)}
                   </span>
                 </div>
+
+                {/* Environment Selector */}
+                <div className="px-4 py-2 bg-white/5 rounded-lg">
+                  <div className="text-xs text-white/60 mb-1">AIRKit Env:</div>
+                  <select
+                    className="text-xs px-2 py-1 bg-black/60 border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/20 w-full text-white"
+                    value={currentEnv}
+                    onChange={(e) => setCurrentEnv(e.target.value as any)}
+                  >
+                    {ENV_OPTIONS.map((opt) => (
+                      <option
+                        key={opt.value}
+                        value={opt.value}
+                        className="bg-black text-white"
+                      >
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <button
-                  onClick={() => {
-                    disconnect();
-                    setMobileMenuOpen(false);
-                  }}
-                  disabled={isDisconnecting}
-                  className="w-full px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleLogoutClick}
+                  className="w-full px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors duration-200"
                 >
-                  {isDisconnecting ? "Disconnecting..." : "Disconnect"}
+                  Disconnect
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
-                <DefaultLogin />
+                <LoginButton isMobile={true} />
                 <Button
                   className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm w-full justify-center"
                   size="sm"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />

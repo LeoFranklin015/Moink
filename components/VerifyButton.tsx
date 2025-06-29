@@ -4,18 +4,14 @@ import {
   AirCredentialWidget,
   type QueryRequest,
   type VerificationResults,
+  type Language,
 } from "@mocanetwork/air-credential-sdk";
 import "@mocanetwork/air-credential-sdk/dist/style.css";
-import {
-  AirService,
-  BUILD_ENV,
-  type AirEventListener,
-  type BUILD_ENV_TYPE,
-} from "@mocanetwork/airkit";
-import { getEnvironmentConfig } from "@/config/environment";
+import { BUILD_ENV } from "@mocanetwork/airkit";
+import { useAppContext } from "@/contexts/AppContext";
 
 interface VerifyButtonProps {
-  partnerId: string;
+  partnerId?: string; // Optional since we can use context partnerId
   verifierDid?: string;
   apiKey?: string;
   programId?: string;
@@ -67,7 +63,7 @@ const getVerifierAuthToken = async (
 };
 
 export const VerifyButton: React.FC<VerifyButtonProps> = ({
-  partnerId,
+  partnerId: propPartnerId,
   verifierDid = process.env.NEXT_PUBLIC_VERIFIER_DID ||
     "did:example:verifier123",
   apiKey = process.env.NEXT_PUBLIC_VERIFIER_API_KEY || "your-verifier-api-key",
@@ -78,8 +74,20 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
   className = "",
   children,
 }) => {
+  const {
+    airService,
+    isLoggedIn,
+    currentEnv,
+    partnerId: contextPartnerId,
+    environmentConfig,
+    isInitialized,
+  } = useAppContext();
+
+  // Use prop partnerId if provided, otherwise use context partnerId
+  const activePartnerId = propPartnerId || contextPartnerId;
+
   console.log("VerifyButton props:", {
-    partnerId,
+    partnerId: activePartnerId,
     verifierDid,
     apiKey,
     programId,
@@ -87,152 +95,10 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
     onVerificationComplete,
   });
 
-  // AirService state management
-  const [airService, setAirService] = useState<AirService | null>(null);
-  const [isAirServiceInitialized, setIsAirServiceInitialized] = useState(false);
-  const [isAirServiceLoading, setIsAirServiceLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userAddress, setUserAddress] = useState<string | null>(null);
-
   // Widget state management
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const widgetRef = useRef<AirCredentialWidget | null>(null);
-
-  // Environment configuration
-  const airKitBuildEnv: BUILD_ENV_TYPE = BUILD_ENV.SANDBOX;
-  const environmentConfig = getEnvironmentConfig(airKitBuildEnv);
-
-  // AirService initialization
-  const initializeAirService = async () => {
-    if (!partnerId || partnerId === "your-partner-id") {
-      const errorMsg = "No valid Partner ID provided for verification";
-      console.warn(errorMsg);
-      setError(errorMsg);
-      onError?.(errorMsg);
-      setIsAirServiceInitialized(true);
-      return;
-    }
-
-    setIsAirServiceLoading(true);
-    try {
-      console.log("Initializing AirService with partnerId:", partnerId);
-
-      const service = new AirService({ partnerId });
-      await service.init({
-        buildEnv: airKitBuildEnv,
-        enableLogging: true,
-        skipRehydration: false,
-      });
-
-      setAirService(service);
-      setIsAirServiceInitialized(true);
-      setIsLoggedIn(service.isLoggedIn);
-
-      if (service.isLoggedIn && service.loginResult) {
-        const result = service.loginResult;
-        console.log("Login result from initialized service:", result);
-        if (result.abstractAccountAddress) {
-          setUserAddress(result.abstractAccountAddress || null);
-        } else {
-          console.log("No abstractAccountAddress, trying eth_accounts");
-          const accounts = await service?.provider.request({
-            method: "eth_accounts",
-            params: [],
-          });
-          console.log("eth_accounts result:", accounts);
-          setUserAddress(
-            Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null
-          );
-        }
-      }
-
-      // Set up event listeners
-      const eventListener: AirEventListener = async (data) => {
-        console.log("AirService event:", data);
-        if (data.event === "logged_in") {
-          setIsLoggedIn(true);
-          if (data.result.abstractAccountAddress) {
-            setUserAddress(data.result.abstractAccountAddress || null);
-          } else {
-            const accounts = await service?.provider.request({
-              method: "eth_accounts",
-              params: [],
-            });
-            setUserAddress(
-              Array.isArray(accounts) && accounts.length > 0
-                ? accounts[0]
-                : null
-            );
-          }
-        } else if (data.event === "logged_out") {
-          setIsLoggedIn(false);
-          setUserAddress(null);
-        }
-      };
-      service.on(eventListener);
-
-      console.log("AirService initialized successfully");
-    } catch (err) {
-      const errorMsg = `Failed to initialize AirService: ${
-        err instanceof Error ? err.message : "Unknown error"
-      }`;
-      console.error(errorMsg);
-      setError(errorMsg);
-      onError?.(errorMsg);
-      setIsAirServiceInitialized(true);
-    } finally {
-      setIsAirServiceLoading(false);
-    }
-  };
-
-  // Initialize AirService when partnerId changes
-  useEffect(() => {
-    if (partnerId) {
-      initializeAirService();
-    }
-
-    // Cleanup on unmount
-    return () => {
-      if (airService) {
-        airService.cleanUp();
-      }
-      if (widgetRef.current) {
-        widgetRef.current.destroy();
-      }
-    };
-  }, [partnerId]);
-
-  // Handle AirService login
-  const handleAirServiceLogin = async () => {
-    if (!airService) return;
-    setIsAirServiceLoading(true);
-    try {
-      const loginResult = await airService.login();
-      console.log("Login result:", loginResult);
-
-      if (loginResult.abstractAccountAddress) {
-        setUserAddress(loginResult.abstractAccountAddress || null);
-      } else {
-        const accounts = await airService?.provider.request({
-          method: "eth_accounts",
-          params: [],
-        });
-        setUserAddress(
-          Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null
-        );
-      }
-    } catch (err) {
-      const errorMsg = `Login failed: ${
-        err instanceof Error ? err.message : "Unknown error"
-      }`;
-      console.error(errorMsg);
-      setError(errorMsg);
-      onError?.(errorMsg);
-    } finally {
-      setIsAirServiceLoading(false);
-    }
-  };
 
   // Generate and launch widget
   const generateWidget = async () => {
@@ -255,7 +121,6 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
 
     try {
       console.log("Starting widget generation...");
-      setError(null);
 
       // Step 1: Fetch the verifier auth token using the API key
       const fetchedVerifierAuthToken = await getVerifierAuthToken(
@@ -301,12 +166,17 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
       console.log("Creating widget with URL:", rp.urlWithToken);
 
       // Create and configure the widget with proper options
-      widgetRef.current = new AirCredentialWidget(queryRequest, partnerId, {
-        endpoint: rp.urlWithToken,
-        airKitBuildEnv: airKitBuildEnv || BUILD_ENV.SANDBOX,
-        theme: "light",
-        redirectUrlForIssuer: redirectUrlForIssuer || undefined,
-      });
+      widgetRef.current = new AirCredentialWidget(
+        queryRequest,
+        activePartnerId,
+        {
+          endpoint: rp.urlWithToken,
+          airKitBuildEnv: currentEnv || BUILD_ENV.SANDBOX,
+          theme: "light",
+          locale: "en" as Language,
+          redirectUrlForIssuer: redirectUrlForIssuer || undefined,
+        }
+      );
 
       // Set up event listeners
       widgetRef.current.on(
@@ -315,6 +185,7 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
           setIsLoading(false);
           console.log("Verification completed:", results);
           onVerificationComplete?.(results);
+          setError(null);
         }
       );
 
@@ -323,13 +194,12 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
         console.log("Widget closed");
       });
 
-      // Launch the widget
-      widgetRef.current.launch();
-      console.log("Widget launched successfully");
+      console.log("Widget created successfully");
     } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Failed to create widget";
-      console.error("Widget generation error:", err);
+      const errorMsg = `Widget generation error: ${
+        err instanceof Error ? err.message : "Unknown error"
+      }`;
+      console.error(errorMsg);
       setError(errorMsg);
       onError?.(errorMsg);
       setIsLoading(false);
@@ -337,47 +207,64 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
   };
 
   const handleVerifyClick = async () => {
-    if (!isAirServiceInitialized) {
-      const errorMsg = "AirService is still initializing. Please wait.";
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Generate widget if not already created
+      if (!widgetRef.current) {
+        await generateWidget();
+      }
+
+      // Start the widget
+      if (widgetRef.current) {
+        widgetRef.current.launch();
+      }
+    } catch (err) {
+      const errorMsg = `Verification error: ${
+        err instanceof Error ? err.message : "Unknown error"
+      }`;
       setError(errorMsg);
       onError?.(errorMsg);
-      return;
+      setIsLoading(false);
     }
-
-    if (!isLoggedIn) {
-      // Try to login first
-      await handleAirServiceLogin();
-      return;
-    }
-
-    setIsLoading(true);
-    await generateWidget();
   };
 
-  // Determine button text and state
   const getButtonText = () => {
-    if (isAirServiceLoading) return "Initializing...";
-    if (isLoading) return "Launching Widget...";
-    if (!isAirServiceInitialized) return "Service Not Ready";
-    if (!isLoggedIn) return "Login & Verify";
+    if (isLoading) return "Launching Verification...";
+    if (!isInitialized) return "Initializing...";
+    if (!isLoggedIn) return "Login Required";
+    if (children) return children;
     return "Verify Credential";
   };
 
-  const isDisabled =
-    isAirServiceLoading ||
-    isLoading ||
-    (!isAirServiceInitialized && !isAirServiceLoading);
+  const isDisabled = () => {
+    return isLoading || !isInitialized || !isLoggedIn;
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (widgetRef.current) {
+        widgetRef.current.destroy();
+      }
+    };
+  }, []);
 
   return (
-    <div className="space-y-2">
+    <div className="verify-button-container">
       <button
         onClick={handleVerifyClick}
-        disabled={isDisabled}
-        className={`px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${className}`}
+        disabled={isDisabled()}
+        className={`px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          isDisabled()
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
+        } ${className}`}
       >
         {isLoading && (
           <svg
-            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline"
+            className="animate-spin -ml-1 mr-2 h-4 w-4 inline"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -397,17 +284,9 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
             ></path>
           </svg>
         )}
-        {children || getButtonText()}
+        {getButtonText()}
       </button>
-
-      {/* Status indicators */}
-      {isAirServiceInitialized && isLoggedIn && userAddress && (
-        <div className="text-xs text-green-600">
-          ✅ Connected: {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
-        </div>
-      )}
-
-      {error && <div className="text-xs text-red-600 max-w-md">❌ {error}</div>}
+      {error && <div className="mt-2 text-sm text-red-600">{error}</div>}
     </div>
   );
 };
