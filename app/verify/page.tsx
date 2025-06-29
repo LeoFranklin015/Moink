@@ -4,7 +4,6 @@ import {
   AirCredentialWidget,
   type QueryRequest,
   type VerificationResults,
-  type Language,
 } from "@mocanetwork/air-credential-sdk";
 import "@mocanetwork/air-credential-sdk/dist/style.css";
 import {
@@ -759,8 +758,8 @@ export default function CredentialVerificationPage() {
               <li>• Set the partner id</li>
               <li>• Set the redirect URL for issuer if required</li>
               <li>
-                • Click "Start Credential Verification Widget" to start the
-                process
+                • Click &quot;Start Credential Verification Widget&quot; to
+                start the process
               </li>
               <li>• The widget will handle the credential verification flow</li>
               <li>• Review the verification results after completion</li>

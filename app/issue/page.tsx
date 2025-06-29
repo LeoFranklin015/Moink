@@ -105,6 +105,7 @@ export default function CredentialIssuancePage() {
       value: 20,
     },
   ]);
+  console.log(userAddress);
 
   // AirService initialization (following React pattern)
   const initializeAirService = async (partnerIdToUse: string = partnerId) => {
@@ -115,6 +116,7 @@ export default function CredentialIssuancePage() {
     }
 
     setIsAirServiceLoading(true);
+    console.log(isAirServiceLoading);
     try {
       console.log("Initializing AirService with partnerId:", partnerIdToUse);
 
@@ -199,46 +201,6 @@ export default function CredentialIssuancePage() {
       }
     };
   }, [partnerId]);
-
-  // Handle AirService login
-  const handleAirServiceLogin = async () => {
-    if (!airService) return;
-    setIsAirServiceLoading(true);
-    try {
-      const loginResult = await airService.login();
-      console.log("Login result:", loginResult);
-
-      if (loginResult.abstractAccountAddress) {
-        setUserAddress(loginResult.abstractAccountAddress || null);
-      } else {
-        const accounts = await airService?.provider.request({
-          method: "eth_accounts",
-          params: [],
-        });
-        setUserAddress(
-          Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null
-        );
-      }
-    } catch (err) {
-      console.error("AirService login failed:", err);
-      setError(
-        `Login failed: ${err instanceof Error ? err.message : "Unknown error"}`
-      );
-    } finally {
-      setIsAirServiceLoading(false);
-    }
-  };
-
-  // Handle AirService logout
-  const handleAirServiceLogout = async () => {
-    if (!airService) return;
-    try {
-      await airService.logout();
-      setUserAddress(null);
-    } catch (err) {
-      console.error("AirService logout error:", err);
-    }
-  };
 
   const handleConfigChange = (field: string, value: string) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
@@ -590,7 +552,8 @@ export default function CredentialIssuancePage() {
             <div className="text-center py-8 text-gray-500">
               <p>No credential fields added yet.</p>
               <p className="text-sm">
-                Click "Add Field" to start building your credential subject.
+                Click &quot;Add Field&quot; to start building your credential
+                subject.
               </p>
             </div>
           ) : (
@@ -783,13 +746,15 @@ export default function CredentialIssuancePage() {
             <li>• Need to whitelist the cross partner domain in Airkit </li>
             <li>• Configure the issuer DID, API key, and credential ID</li>
             <li>
-              • Add credential subject fields using the "Add Field" button
+              • Add credential subject fields using the &quot;Add Field&quot;
+              button
             </li>
             <li>
               • Set field name, type (string, number, boolean, date), and value
             </li>
             <li>
-              • Click "Start Credential Issuance Widget" to start the process
+              • Click &quot;Start Credential Issuance Widget&quot; to start the
+              process
             </li>
             <li>• The widget will handle the credential issuance flow</li>
           </ul>

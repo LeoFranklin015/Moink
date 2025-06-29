@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Nami AI | Donations",
     description:
@@ -38,7 +34,7 @@ export async function generateMetadata({
     },
   };
 }
-export default function EmbedPage({ params }: { params: { id: string } }) {
+export default function EmbedPage() {
   return (
     <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
       <iframe

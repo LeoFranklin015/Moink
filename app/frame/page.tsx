@@ -98,12 +98,15 @@ export default function DonatePage() {
                     </p>
                     <p>
                       <strong>Credential ID:</strong>{" "}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {(verificationResults as any).credentialId || "N/A"}
                     </p>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {(verificationResults as any).verificationTime && (
                       <p>
                         <strong>Verified At:</strong>{" "}
                         {new Date(
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           (verificationResults as any).verificationTime
                         ).toLocaleString()}
                       </p>
