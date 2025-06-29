@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAccount, useDisconnect } from "wagmi";
-import { DefaultLogin } from "@/components/ConnectButtons/DefaultLogin";
 import { Button } from "@/components/common/Button";
+import { LoginButton } from "./common/LoginButton";
 
 export const Navbar = () => {
   const { address, isConnected, isConnecting } = useAccount();
@@ -94,7 +94,7 @@ export const Navbar = () => {
               )}
             </div>
           ) : (
-            <DefaultLogin />
+            <LoginButton />
           )}
         </div>
       </div>

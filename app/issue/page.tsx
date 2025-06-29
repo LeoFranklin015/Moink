@@ -67,7 +67,6 @@ export default function CredentialIssuancePage() {
     airService,
     isInitialized,
     isLoggedIn,
-    userAddress,
     partnerId,
     currentEnv,
     environmentConfig,
@@ -627,14 +626,14 @@ export default function CredentialIssuancePage() {
               <li>• Need to whitelist the cross partner domain in Airkit</li>
               <li>• Configure the issuer DID, API key, and credential ID</li>
               <li>
-                • Add credential subject fields using the "Add Field" button
+                • Add credential subject fields using the Add Field button
               </li>
               <li>
                 • Set field name, type (string, number, boolean, date), and
                 value
               </li>
               <li>
-                • Click "Start Credential Issuance Widget" to start the process
+                • Click Start Credential Issuance Widget to start the process
               </li>
               <li>• The widget will handle the credential issuance flow</li>
             </ul>

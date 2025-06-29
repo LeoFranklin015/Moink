@@ -179,6 +179,7 @@ const NavBarLogin = () => {
             <select
               className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
               value={currentEnv}
+              //eslint-disable-next-line @typescript-eslint/no-explicit-any
               onChange={(e) => setCurrentEnv(e.target.value as any)}
             >
               {ENV_OPTIONS.map((opt) => (

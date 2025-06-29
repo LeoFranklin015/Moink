@@ -466,7 +466,7 @@ const CredentialVerification = () => {
               <li>• Set the partner id</li>
               <li>• Set the redirect URL for issuer if required</li>
               <li>
-                • Click "Start Credential Verification Widget" to start the
+                • Click Start Credential Verification Widget to start the
                 process
               </li>
               <li>• The widget will handle the credential verification flow</li>

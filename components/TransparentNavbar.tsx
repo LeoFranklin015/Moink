@@ -5,12 +5,11 @@ import { ArrowRight, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 import { useAppContext, ENV_OPTIONS } from "../contexts/AppContext";
+import { LoginButton } from "./common/LoginButton";
 
 export const TransparentNavbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
-    isLoading,
-    isInitialized,
     isLoggedIn,
     userAddress,
     handleLogin,
@@ -21,6 +20,7 @@ export const TransparentNavbar = () => {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [mounted, setMounted] = useState(false);
 
   // Format address to show first 4 and last 4 characters
@@ -55,99 +55,10 @@ export const TransparentNavbar = () => {
     setMobileMenuOpen(false);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleLoginClick = () => {
     handleLogin();
     setMobileMenuOpen(false);
-  };
-
-  const LoginButton = ({ isMobile = false }) => {
-    if (!mounted || !isInitialized) {
-      return (
-        <Button
-          disabled
-          className={`bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm ${
-            isMobile ? "w-full justify-center" : ""
-          }`}
-          size="sm"
-        >
-          <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          Initializing...
-        </Button>
-      );
-    }
-
-    return (
-      <Button
-        onClick={handleLoginClick}
-        disabled={isLoading}
-        className={`bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 ${
-          isMobile ? "w-full justify-center" : ""
-        }`}
-        size="sm"
-      >
-        {isLoading ? (
-          <>
-            <svg
-              className="animate-spin -ml-1 mr-2 h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            Connecting...
-          </>
-        ) : (
-          <>
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-            Connect Wallet
-          </>
-        )}
-      </Button>
-    );
   };
 
   return (
@@ -243,6 +154,7 @@ export const TransparentNavbar = () => {
                     <select
                       className="text-xs px-2 py-1 bg-black/60 border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/20 w-full text-white"
                       value={currentEnv}
+                      //eslint-disable-next-line @typescript-eslint/no-explicit-any
                       onChange={(e) => setCurrentEnv(e.target.value as any)}
                     >
                       {ENV_OPTIONS.map((opt) => (
@@ -267,7 +179,7 @@ export const TransparentNavbar = () => {
             </div>
           ) : (
             <div className="flex items-center space-x-4">
-              <LoginButton />
+              <LoginButton variant="transparent" onClick={() => {}} />
             </div>
           )}
         </div>
@@ -342,6 +254,7 @@ export const TransparentNavbar = () => {
                   <select
                     className="text-xs px-2 py-1 bg-black/60 border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/20 w-full text-white"
                     value={currentEnv}
+                    //eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onChange={(e) => setCurrentEnv(e.target.value as any)}
                   >
                     {ENV_OPTIONS.map((opt) => (
@@ -365,7 +278,11 @@ export const TransparentNavbar = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <LoginButton isMobile={true} />
+                <LoginButton
+                  variant="transparent"
+                  fullWidth={true}
+                  onClick={() => setMobileMenuOpen(false)}
+                />
                 <Button
                   className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm w-full justify-center"
                   size="sm"
