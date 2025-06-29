@@ -1,49 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { getDatabase } from "@/lib/mongodb";
+import {
+  FrameConfigDocument,
+  FRAME_CONFIGS_COLLECTION,
+  createFrameConfigDocument,
+  generateFrameConfigId,
+} from "@/lib/models/frameConfig";
 import { FrameConfig } from "@/app/builder/page";
-
-// Simple file-based storage (can be upgraded to a real database later)
-const CONFIGS_FILE = path.join(process.cwd(), "data", "configs.json");
-
-interface StoredConfig {
-  id: string;
-  config: FrameConfig;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Ensure data directory exists
-async function ensureDataDir() {
-  const dataDir = path.dirname(CONFIGS_FILE);
-  try {
-    await fs.access(dataDir);
-  } catch {
-    await fs.mkdir(dataDir, { recursive: true });
-  }
-}
-
-// Load configs from file
-async function loadConfigs(): Promise<Record<string, StoredConfig>> {
-  try {
-    await ensureDataDir();
-    const data = await fs.readFile(CONFIGS_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return {};
-  }
-}
-
-// Save configs to file
-async function saveConfigs(configs: Record<string, StoredConfig>) {
-  await ensureDataDir();
-  await fs.writeFile(CONFIGS_FILE, JSON.stringify(configs, null, 2));
-}
-
-// Generate unique ID
-function generateId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
-}
 
 // POST - Save a new config
 export async function POST(request: NextRequest) {
@@ -57,19 +20,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const configs = await loadConfigs();
-    const id = generateId();
-    const now = new Date().toISOString();
+    // Connect to database
+    const db = await getDatabase();
+    const collection = db.collection<FrameConfigDocument>(
+      FRAME_CONFIGS_COLLECTION
+    );
 
-    const storedConfig: StoredConfig = {
-      id,
-      config,
-      createdAt: now,
-      updatedAt: now,
-    };
+    // Generate unique ID and create document
+    const id = generateFrameConfigId();
+    const document = createFrameConfigDocument(id, config);
 
-    configs[id] = storedConfig;
-    await saveConfigs(configs);
+    // Insert into MongoDB
+    const result = await collection.insertOne(document);
+
+    if (!result.acknowledged) {
+      throw new Error("Failed to insert config into database");
+    }
 
     return NextResponse.json({
       success: true,
@@ -79,7 +45,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error saving config:", error);
     return NextResponse.json(
-      { error: "Failed to save config" },
+      {
+        error: "Failed to save config",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
@@ -98,26 +67,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const configs = await loadConfigs();
-    const storedConfig = configs[id];
+    // Connect to database
+    const db = await getDatabase();
+    const collection = db.collection<FrameConfigDocument>(
+      FRAME_CONFIGS_COLLECTION
+    );
 
-    if (!storedConfig) {
+    // Find document by ID
+    const document = await collection.findOne({ id });
+
+    if (!document) {
       return NextResponse.json({ error: "Config not found" }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      config: storedConfig.config,
+      config: document.config,
       metadata: {
-        id: storedConfig.id,
-        createdAt: storedConfig.createdAt,
-        updatedAt: storedConfig.updatedAt,
+        id: document.id,
+        createdAt: document.createdAt.toISOString(),
+        updatedAt: document.updatedAt.toISOString(),
       },
     });
   } catch (error) {
     console.error("Error retrieving config:", error);
     return NextResponse.json(
-      { error: "Failed to retrieve config" },
+      {
+        error: "Failed to retrieve config",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
