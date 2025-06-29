@@ -5,6 +5,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { useState, useEffect } from "react";
 import type { VerificationResults } from "@mocanetwork/air-credential-sdk";
 import type { FrameConfig } from "@/app/builder/page";
+import { LoginButton } from "@/components/common/LoginButton";
 
 export default function DonatePage({ configId }: { configId: string }) {
   const { isLoggedIn, partnerId } = useAppContext();
@@ -94,6 +95,7 @@ export default function DonatePage({ configId }: { configId: string }) {
           <p className="text-white/70 mb-6">
             Please login to access this frame and use verification features.
           </p>
+          <LoginButton />
         </div>
       </div>
     );
