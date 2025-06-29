@@ -71,8 +71,8 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
   verifierDid = process.env.NEXT_PUBLIC_VERIFIER_DID ||
     "did:example:verifier123",
   apiKey = process.env.NEXT_PUBLIC_VERIFIER_API_KEY || "your-verifier-api-key",
-  programId = process.env.NEXT_PUBLIC_PROGRAM_ID || "c21hc030kb5iu0030224Qs",
-  redirectUrlForIssuer = "http://localhost:3000/issue",
+  programId = process.env.NEXT_PUBLIC_PROGRAM_ID || "c21hg030taxui0091199Ic",
+  redirectUrlForIssuer = "https://moink.crevn.xyz/issue",
   onVerificationComplete,
   onError,
   className = "",
