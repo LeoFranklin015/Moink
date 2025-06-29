@@ -7,9 +7,12 @@ import {
   type Language,
 } from "@mocanetwork/air-credential-sdk";
 import "@mocanetwork/air-credential-sdk/dist/style.css";
-import { BUILD_ENV } from "@mocanetwork/airkit";
-import type { BUILD_ENV_TYPE } from "@mocanetwork/airkit";
-import { useAirkit } from "@/hooks/useAirkit";
+import {
+  AirService,
+  BUILD_ENV,
+  type AirEventListener,
+  type BUILD_ENV_TYPE,
+} from "@mocanetwork/airkit";
 import { usePartner } from "@/hooks/usePartner";
 import { getEnvironmentConfig } from "@/config/environment";
 import { useAccount } from "wagmi";
@@ -56,10 +59,17 @@ const getVerifierAuthToken = async (
 };
 
 export default function CredentialVerificationPage() {
-  const { airService, isMocaNetwork } = useAirkit();
   const { partnerId } = usePartner();
   const { isConnected } = useAccount();
 
+  // AirService state management (following React pattern)
+  const [airService, setAirService] = useState<AirService | null>(null);
+  const [isAirServiceInitialized, setIsAirServiceInitialized] = useState(false);
+  const [isAirServiceLoading, setIsAirServiceLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+
+  // Widget state management
   const [isLoading, setIsLoading] = useState(false);
   const [verificationResult, setVerificationResult] =
     useState<VerificationResults | null>(null);
@@ -81,14 +91,164 @@ export default function CredentialVerificationPage() {
       "http://localhost:3000/issue",
   });
 
-  console.log("AirService in CredentialVerification:", airService);
+  // AirService initialization (following React pattern)
+  const initializeAirService = async (partnerIdToUse: string = partnerId) => {
+    if (!partnerIdToUse || partnerIdToUse === "your-partner-id") {
+      console.warn("No valid Partner ID configured for verification");
+      setIsAirServiceInitialized(true);
+      return;
+    }
+
+    setIsAirServiceLoading(true);
+    try {
+      console.log("Initializing AirService with partnerId:", partnerIdToUse);
+
+      const service = new AirService({ partnerId: partnerIdToUse });
+      await service.init({
+        buildEnv: airKitBuildEnv,
+        enableLogging: true,
+        skipRehydration: false,
+      });
+
+      setAirService(service);
+      setIsAirServiceInitialized(true);
+      setIsLoggedIn(service.isLoggedIn);
+
+      if (service.isLoggedIn && service.loginResult) {
+        const result = service.loginResult;
+        console.log("Login result from initialized service:", result);
+        if (result.abstractAccountAddress) {
+          setUserAddress(result.abstractAccountAddress || null);
+        } else {
+          console.log("No abstractAccountAddress, trying eth_accounts");
+          const accounts = await service?.provider.request({
+            method: "eth_accounts",
+            params: [],
+          });
+          console.log("eth_accounts result:", accounts);
+          setUserAddress(
+            Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null
+          );
+        }
+      }
+
+      // Set up event listeners (following React pattern)
+      const eventListener: AirEventListener = async (data) => {
+        console.log("AirService event:", data);
+        if (data.event === "logged_in") {
+          setIsLoggedIn(true);
+          if (data.result.abstractAccountAddress) {
+            setUserAddress(data.result.abstractAccountAddress || null);
+          } else {
+            const accounts = await service?.provider.request({
+              method: "eth_accounts",
+              params: [],
+            });
+            setUserAddress(
+              Array.isArray(accounts) && accounts.length > 0
+                ? accounts[0]
+                : null
+            );
+          }
+        } else if (data.event === "logged_out") {
+          setIsLoggedIn(false);
+          setUserAddress(null);
+        }
+      };
+      service.on(eventListener);
+
+      console.log("AirService initialized successfully");
+    } catch (err) {
+      console.error("Failed to initialize AirService:", err);
+      setError(
+        `Failed to initialize AirService: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+      setIsAirServiceInitialized(true); // Set to true to prevent infinite loading on error
+    } finally {
+      setIsAirServiceLoading(false);
+    }
+  };
+
+  // Initialize AirService when partnerId changes
+  useEffect(() => {
+    if (partnerId) {
+      initializeAirService(partnerId);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (airService) {
+        airService.cleanUp();
+      }
+    };
+  }, [partnerId]);
+
+  // Handle AirService login
+  const handleAirServiceLogin = async () => {
+    if (!airService) return;
+    setIsAirServiceLoading(true);
+    try {
+      const loginResult = await airService.login();
+      console.log("Login result:", loginResult);
+
+      if (loginResult.abstractAccountAddress) {
+        setUserAddress(loginResult.abstractAccountAddress || null);
+      } else {
+        const accounts = await airService?.provider.request({
+          method: "eth_accounts",
+          params: [],
+        });
+        setUserAddress(
+          Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null
+        );
+      }
+    } catch (err) {
+      console.error("AirService login failed:", err);
+      setError(
+        `Login failed: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+    } finally {
+      setIsAirServiceLoading(false);
+    }
+  };
+
+  // Handle AirService logout
+  const handleAirServiceLogout = async () => {
+    if (!airService) return;
+    try {
+      await airService.logout();
+      setUserAddress(null);
+    } catch (err) {
+      console.error("AirService logout error:", err);
+    }
+  };
+
+  console.log("AirService state:", {
+    airService: !!airService,
+    isAirServiceInitialized,
+    isLoggedIn,
+    userAddress,
+    partnerId,
+  });
 
   const handleConfigChange = (field: string, value: string) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
   };
 
   const generateWidget = async () => {
+    if (!airService) {
+      setError(
+        "AirService is not initialized. Please wait for initialization to complete."
+      );
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      console.log("Starting widget generation...");
+
       // Step 1: Fetch the verifier auth token using the API key
       const fetchedVerifierAuthToken = await getVerifierAuthToken(
         config.verifierDid,
@@ -111,10 +271,12 @@ export default function CredentialVerificationPage() {
         programId: config.programId,
       };
 
+      console.log("Getting URL with token from AirService...");
       const rp = await airService
-        ?.goToPartner(environmentConfig.widgetUrl)
+        .goToPartner(environmentConfig.widgetUrl)
         .catch((err) => {
           console.error("Error getting URL with token:", err);
+          throw err;
         });
 
       if (!rp?.urlWithToken) {
@@ -125,10 +287,13 @@ export default function CredentialVerificationPage() {
         setIsLoading(false);
         return;
       }
+
+      console.log("Creating widget with URL:", rp.urlWithToken);
+
       // Create and configure the widget with proper options
       widgetRef.current = new AirCredentialWidget(queryRequest, partnerId, {
-        endpoint: rp?.urlWithToken,
-        airKitBuildEnv: airKitBuildEnv || BUILD_ENV.STAGING,
+        endpoint: rp.urlWithToken,
+        airKitBuildEnv: airKitBuildEnv || BUILD_ENV.SANDBOX,
         theme: "light", // currently only have light theme
         redirectUrlForIssuer: config.redirectUrlForIssuer || undefined,
       });
@@ -147,7 +312,10 @@ export default function CredentialVerificationPage() {
         setIsLoading(false);
         console.log("Widget closed");
       });
+
+      console.log("Widget created successfully");
     } catch (err) {
+      console.error("Widget generation error:", err);
       setError(err instanceof Error ? err.message : "Failed to create widget");
       setIsLoading(false);
     }
@@ -279,10 +447,81 @@ export default function CredentialVerificationPage() {
             </div>
           )}
 
-          {!isMocaNetwork && isConnected && (
+          {/* AirService Status */}
+          {isAirServiceLoading && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-blue-800">
-                ℹ️ Please connect to the Moca Network to access all features.
+              <p className="text-blue-800 flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-800"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Initializing AirService...
+              </p>
+            </div>
+          )}
+
+          {isAirServiceInitialized && !isLoggedIn && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <p className="text-yellow-800">
+                  ⚠️ AirService initialized but not logged in. Please log in to
+                  access verification features.
+                </p>
+                <button
+                  onClick={handleAirServiceLogin}
+                  disabled={isAirServiceLoading}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {isAirServiceLoading
+                    ? "Logging in..."
+                    : "Login to AirService"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isAirServiceInitialized && isLoggedIn && userAddress && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-green-800 font-medium">
+                    ✅ AirService connected successfully!
+                  </p>
+                  <p className="text-green-700 text-sm">
+                    Address: {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
+                  </p>
+                </div>
+                <button
+                  onClick={handleAirServiceLogout}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!isAirServiceInitialized && isConnected && !isAirServiceLoading && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-800">
+                ❌ Failed to initialize AirService. Please check the console for
+                errors.
               </p>
             </div>
           )}
@@ -383,6 +622,32 @@ export default function CredentialVerificationPage() {
               <p>
                 <strong>Build Environment:</strong> {airKitBuildEnv}
               </p>
+              <p>
+                <strong>AirService Status:</strong>{" "}
+                {isAirServiceLoading ? (
+                  <span className="text-blue-600">Initializing...</span>
+                ) : isAirServiceInitialized ? (
+                  <span className="text-green-600">Initialized</span>
+                ) : (
+                  <span className="text-red-600">Not Initialized</span>
+                )}
+              </p>
+              <p>
+                <strong>AirService Login:</strong>{" "}
+                {isLoggedIn ? (
+                  <span className="text-green-600">Logged In</span>
+                ) : (
+                  <span className="text-orange-600">Not Logged In</span>
+                )}
+              </p>
+              <p>
+                <strong>Wallet:</strong>{" "}
+                {isConnected ? (
+                  <span className="text-green-600">Connected</span>
+                ) : (
+                  <span className="text-red-600">Not Connected</span>
+                )}
+              </p>
             </div>
           </div>
 
@@ -427,7 +692,12 @@ export default function CredentialVerificationPage() {
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
             <button
               onClick={handleVerifyCredential}
-              disabled={isLoading || !isConnected}
+              disabled={
+                isLoading ||
+                !isConnected ||
+                !isAirServiceInitialized ||
+                !isLoggedIn
+              }
               className="w-full sm:flex-1 bg-blue-600 text-white px-4 sm:px-6 py-3 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
@@ -476,6 +746,14 @@ export default function CredentialVerificationPage() {
             </h4>
             <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
               <li>• Connect your wallet using the navigation bar</li>
+              <li>
+                • Wait for AirService to initialize (should happen
+                automatically)
+              </li>
+              <li>
+                • Login to AirService using the login button if not already
+                logged in
+              </li>
               <li>• Need to whitelist the cross partner domain in Airkit </li>
               <li>• Configure the verifier API key and program ID</li>
               <li>• Set the partner id</li>

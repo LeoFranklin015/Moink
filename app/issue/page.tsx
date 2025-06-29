@@ -8,9 +8,12 @@ import {
   type Language,
 } from "@mocanetwork/air-credential-sdk";
 import "@mocanetwork/air-credential-sdk/dist/style.css";
-import { BUILD_ENV } from "@mocanetwork/airkit";
-import type { BUILD_ENV_TYPE } from "@mocanetwork/airkit";
-import { useAirkit } from "@/hooks/useAirkit";
+import {
+  AirService,
+  BUILD_ENV,
+  type AirEventListener,
+  type BUILD_ENV_TYPE,
+} from "@mocanetwork/airkit";
 import { usePartner } from "@/hooks/usePartner";
 import { getEnvironmentConfig } from "@/config/environment";
 import { useAccount } from "wagmi";
@@ -66,10 +69,17 @@ const getIssuerAuthToken = async (
 };
 
 export default function CredentialIssuancePage() {
-  const airConnector = useAirkit();
   const { partnerId } = usePartner();
   const { isConnected } = useAccount();
 
+  // AirService state management (following React pattern)
+  const [airService, setAirService] = useState<AirService | null>(null);
+  const [isAirServiceInitialized, setIsAirServiceInitialized] = useState(false);
+  const [isAirServiceLoading, setIsAirServiceLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+
+  // Widget state management
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +105,140 @@ export default function CredentialIssuancePage() {
       value: 20,
     },
   ]);
+
+  // AirService initialization (following React pattern)
+  const initializeAirService = async (partnerIdToUse: string = partnerId) => {
+    if (!partnerIdToUse || partnerIdToUse === "your-partner-id") {
+      console.warn("No valid Partner ID configured for issuance");
+      setIsAirServiceInitialized(true);
+      return;
+    }
+
+    setIsAirServiceLoading(true);
+    try {
+      console.log("Initializing AirService with partnerId:", partnerIdToUse);
+
+      const service = new AirService({ partnerId: partnerIdToUse });
+      await service.init({
+        buildEnv: airKitBuildEnv,
+        enableLogging: true,
+        skipRehydration: false,
+      });
+
+      setAirService(service);
+      setIsAirServiceInitialized(true);
+      setIsLoggedIn(service.isLoggedIn);
+
+      if (service.isLoggedIn && service.loginResult) {
+        const result = service.loginResult;
+        console.log("Login result from initialized service:", result);
+        if (result.abstractAccountAddress) {
+          setUserAddress(result.abstractAccountAddress || null);
+        } else {
+          console.log("No abstractAccountAddress, trying eth_accounts");
+          const accounts = await service?.provider.request({
+            method: "eth_accounts",
+            params: [],
+          });
+          console.log("eth_accounts result:", accounts);
+          setUserAddress(
+            Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null
+          );
+        }
+      }
+
+      // Set up event listeners (following React pattern)
+      const eventListener: AirEventListener = async (data) => {
+        console.log("AirService event:", data);
+        if (data.event === "logged_in") {
+          setIsLoggedIn(true);
+          if (data.result.abstractAccountAddress) {
+            setUserAddress(data.result.abstractAccountAddress || null);
+          } else {
+            const accounts = await service?.provider.request({
+              method: "eth_accounts",
+              params: [],
+            });
+            setUserAddress(
+              Array.isArray(accounts) && accounts.length > 0
+                ? accounts[0]
+                : null
+            );
+          }
+        } else if (data.event === "logged_out") {
+          setIsLoggedIn(false);
+          setUserAddress(null);
+        }
+      };
+      service.on(eventListener);
+
+      console.log("AirService initialized successfully");
+    } catch (err) {
+      console.error("Failed to initialize AirService:", err);
+      setError(
+        `Failed to initialize AirService: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+      setIsAirServiceInitialized(true); // Set to true to prevent infinite loading on error
+    } finally {
+      setIsAirServiceLoading(false);
+    }
+  };
+
+  // Initialize AirService when partnerId changes
+  useEffect(() => {
+    if (partnerId) {
+      initializeAirService(partnerId);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (airService) {
+        airService.cleanUp();
+      }
+    };
+  }, [partnerId]);
+
+  // Handle AirService login
+  const handleAirServiceLogin = async () => {
+    if (!airService) return;
+    setIsAirServiceLoading(true);
+    try {
+      const loginResult = await airService.login();
+      console.log("Login result:", loginResult);
+
+      if (loginResult.abstractAccountAddress) {
+        setUserAddress(loginResult.abstractAccountAddress || null);
+      } else {
+        const accounts = await airService?.provider.request({
+          method: "eth_accounts",
+          params: [],
+        });
+        setUserAddress(
+          Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null
+        );
+      }
+    } catch (err) {
+      console.error("AirService login failed:", err);
+      setError(
+        `Login failed: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+    } finally {
+      setIsAirServiceLoading(false);
+    }
+  };
+
+  // Handle AirService logout
+  const handleAirServiceLogout = async () => {
+    if (!airService) return;
+    try {
+      await airService.logout();
+      setUserAddress(null);
+    } catch (err) {
+      console.error("AirService logout error:", err);
+    }
+  };
 
   const handleConfigChange = (field: string, value: string) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
@@ -196,10 +340,20 @@ export default function CredentialIssuancePage() {
         credentialSubject: credentialSubject,
       };
 
-      const rp = await airConnector.airService
-        ?.goToPartner(environmentConfig.widgetUrl)
+      if (!airService) {
+        setError(
+          "AirService is not initialized. Please wait for initialization to complete."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Getting URL with token from AirService...");
+      const rp = await airService
+        .goToPartner(environmentConfig.widgetUrl)
         .catch((err) => {
           console.error("Error getting URL with token:", err);
+          throw err;
         });
 
       console.log("urlWithToken", rp, rp?.urlWithToken);
@@ -539,8 +693,10 @@ export default function CredentialIssuancePage() {
               <strong>Locale:</strong> {LOCALE}
             </p>
             <p>
-              <strong>Moca Network:</strong>{" "}
-              {airConnector.isMocaNetwork ? "Connected" : "Not Connected"}
+              <strong>AirService:</strong>{" "}
+              {isAirServiceInitialized && isLoggedIn
+                ? "Connected"
+                : "Not Connected"}
             </p>
             <p>
               <strong>Wallet:</strong>{" "}
@@ -568,7 +724,12 @@ export default function CredentialIssuancePage() {
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
           <button
             onClick={handleIssueCredential}
-            disabled={isLoading || !isConnected || !airConnector.isMocaNetwork}
+            disabled={
+              isLoading ||
+              !isConnected ||
+              !isAirServiceInitialized ||
+              !isLoggedIn
+            }
             className="w-full sm:flex-1 bg-blue-600 text-white px-4 sm:px-6 py-3 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (

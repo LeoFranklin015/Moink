@@ -16,7 +16,7 @@ export async function generateMetadata({
       images: ["/logo.png"],
     },
     other: {
-      "twitter:player": `https://of-exploration-achievements-ben.trycloudflare.com/embed`,
+      "twitter:player": `https://christine-medicine-possibilities-yield.trycloudflare.com/embed`,
       "x-frame-options": "ALLOWALL",
       "content-security-policy": "frame-ancestors *;",
     },
@@ -29,8 +29,8 @@ export async function generateMetadata({
         "An autonomous agent that discovers global disasters, collect donations and keeps NGO’s accountable.",
       players: [
         {
-          playerUrl: `https://of-exploration-achievements-ben.trycloudflare.com/embed`,
-          streamUrl: `https://of-exploration-achievements-ben.trycloudflare.com/embed`,
+          playerUrl: `https://christine-medicine-possibilities-yield.trycloudflare.com/embed`,
+          streamUrl: `https://christine-medicine-possibilities-yield.trycloudflare.com/embed`,
           width: 360,
           height: 560,
         },
