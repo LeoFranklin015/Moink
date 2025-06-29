@@ -1,70 +1,146 @@
 "use client";
 
-import { useAccount } from "wagmi";
-import { Navbar } from "@/components/Navbar";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FeaturesSection } from "@/components/features-section";
+import { TransparentNavbar } from "@/components/TransparentNavbar";
 
-export default function Home() {
-  const {
-    address,
-    chainId,
-    isConnected,
-    isReconnecting,
-    isConnecting: isAccountConnecting,
-  } = useAccount();
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Atmospheric Background */}
+      <div className="fixed inset-0 -z-10">
+        {/* Main radial gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, #2d4663 0%, #1a2b42 50%, #0a1628 100%)",
+          }}
+        />
 
-      <div className="p-6 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Welcome to Moink
-        </h1>
+        {/* Subtle noise texture */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3Cfilter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          }}
+        />
+      </div>
 
-        {isConnected && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Connection Details
-            </h2>
+      {/* Enhanced Space Animation Video Background */}
+      <div className="fixed inset-0 -z-5">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover opacity-80"
+          style={{
+            filter: "brightness(0.9) contrast(1.1) saturate(1.2)",
+          }}
+        >
+          <source src="/space.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
 
-            {/* Connection State Display */}
-            <pre className="text-xs bg-gray-100 p-4 rounded-md text-gray-800 overflow-x-auto">
-              {JSON.stringify(
-                {
-                  address,
-                  chainId,
-                  isAccountConnecting,
-                  isReconnecting,
-                  isConnected,
-                },
-                null,
-                2
-              )}
-            </pre>
+        {/* Dynamic overlay that pulses with the animation */}
+        <div
+          className="absolute inset-0 animate-pulse"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(45, 70, 99, 0.1) 0%, rgba(26, 43, 66, 0.3) 50%, rgba(10, 22, 40, 0.4) 100%)",
+            animationDuration: "4s",
+          }}
+        />
+      </div>
 
-            {isReconnecting && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                <p className="text-sm text-yellow-800">
-                  🔄 Reconnecting to wallet...
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+      {/* Navigation */}
+      <TransparentNavbar />
 
-        {!isConnected && (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Connect Your Wallet
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Please connect your wallet using the button in the navigation
-                bar to get started.
+      {/* Hero Section */}
+      <main className="relative z-10 min-h-screen flex items-center py-20">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Hero Content - Centered */}
+            <div className="text-center">
+              {/* Main Headline with enhanced styling */}
+              <h1
+                className="text-white font-light leading-tight tracking-tight mb-8 relative"
+                style={{
+                  fontSize: "clamp(3rem, 6vw, 5rem)",
+                  lineHeight: "1.1",
+                  letterSpacing: "-0.02em",
+                  background:
+                    "linear-gradient(90deg, #ffffff 0%, #e2e8f0 50%, #ffffff 100%)",
+                  backgroundSize: "200% 100%",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  animation: "shimmer 3s ease-in-out infinite",
+                }}
+              >
+                Stop Sending Users Away—Convert Them Inside Twitter
+              </h1>
+
+              {/* Supporting Text */}
+              <p
+                className="text-white/80 mb-12 max-w-4xl mx-auto"
+                style={{
+                  fontSize: "clamp(1.1rem, 2.5vw, 1.5rem)",
+                  lineHeight: "1.6",
+                }}
+              >
+                Let users instantly prove their identity or eligibility using
+                their existing Moca-issued credentials—without ever leaving
+                their social feed. More engagement. Less friction. Higher
+                conversions.
               </p>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <Button
+                  size="lg"
+                  className="bg-blue-500/90 hover:bg-blue-500 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 px-10 py-4 text-lg font-medium"
+                >
+                  Start Converting on Twitter
+                  <ArrowRight className="ml-3 h-6 w-6" />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 px-10 py-4 text-lg font-medium"
+                >
+                  See Demo Frame
+                </Button>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+      </main>
+
+      {/* Features Section */}
+      <FeaturesSection />
+
+      {/* Subtle glow effects */}
+      <div className="fixed inset-0 -z-6 pointer-events-none">
+        <div
+          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-10"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)",
+            filter: "blur(40px)",
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full opacity-5"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)",
+            filter: "blur(60px)",
+          }}
+        />
       </div>
     </div>
   );
