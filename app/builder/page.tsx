@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Play, Save, Copy, ExternalLink } from "lucide-react";
+import { ArrowLeft, Save, Copy, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FramePreview } from "@/components/FramePreview";
