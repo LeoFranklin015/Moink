@@ -19,6 +19,8 @@ interface VerifyButtonProps {
   onVerificationComplete?: (results: VerificationResults) => void;
   onError?: (error: string) => void;
   className?: string;
+  text?: string; // Custom button text
+  style?: React.CSSProperties; // Custom button styles
   children?: React.ReactNode;
 }
 
@@ -72,6 +74,8 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
   onVerificationComplete,
   onError,
   className = "",
+  text,
+  style,
   children,
 }) => {
   const {
@@ -235,6 +239,7 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
     if (!isInitialized) return "Initializing...";
     if (!isLoggedIn) return "Login Required";
     if (children) return children;
+    if (text) return text;
     return "Verify Credential";
   };
 
@@ -256,6 +261,7 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
       <button
         onClick={handleVerifyClick}
         disabled={isDisabled()}
+        style={style}
         className={`px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
           isDisabled()
             ? "bg-gray-300 text-gray-500 cursor-not-allowed"

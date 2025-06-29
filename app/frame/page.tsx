@@ -1,9 +1,7 @@
 "use client";
 
 import { VerifyButton } from "@/components/VerifyButton";
-import { FramePreview } from "@/components/FramePreview";
 import { useAppContext } from "@/contexts/AppContext";
-import Layout from "@/components/Layout";
 import { useState, useEffect } from "react";
 import type { VerificationResults } from "@mocanetwork/air-credential-sdk";
 import type { FrameConfig } from "@/app/builder/page";
@@ -17,6 +15,7 @@ export default function DonatePage({ configId }: { configId: string }) {
   const [verificationResults, setVerificationResults] =
     useState<VerificationResults | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showAbi, setShowAbi] = useState(false);
 
   // Fetch config on mount
   useEffect(() => {
@@ -51,9 +50,7 @@ export default function DonatePage({ configId }: { configId: string }) {
     console.log("Verification completed:", results);
     setVerificationResults(results);
     setErrorMessage(null);
-
-    // You can add more logic here, like showing a success message or redirecting
-    alert(`Verification completed! Status: ${results.status}`);
+    setShowAbi(true);
   };
 
   const handleVerificationError = (error: string) => {
@@ -88,107 +85,174 @@ export default function DonatePage({ configId }: { configId: string }) {
     );
   }
 
-  return (
-    <Layout>
+  // Not logged in state
+  if (!isLoggedIn) {
+    return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl">
-          {/* Frame Display */}
-          <div className="flex items-center justify-center mb-8">
-            <FramePreview config={config} />
-          </div>
-
-          {/* Verification Section - Only show if logged in */}
-          {isLoggedIn && (
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 max-w-2xl mx-auto">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Credential Verification
-              </h3>
-
-              <div className="space-y-4">
-                <VerifyButton
-                  partnerId={partnerId}
-                  verifierDid={
-                    process.env.NEXT_PUBLIC_VERIFIER_DID ||
-                    "did:example:verifier123"
-                  }
-                  apiKey={
-                    process.env.NEXT_PUBLIC_VERIFIER_API_KEY ||
-                    "your-verifier-api-key"
-                  }
-                  programId={
-                    process.env.NEXT_PUBLIC_PROGRAM_ID ||
-                    "c21hg030taxui0091199Ic"
-                  }
-                  redirectUrlForIssuer={
-                    process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
-                    "http://localhost:3000/issue"
-                  }
-                  onVerificationComplete={handleVerificationComplete}
-                  onError={handleVerificationError}
-                  className="w-full"
-                />
-
-                {/* Verification Results Display */}
-                {verificationResults && (
-                  <div className="mt-6 p-4 bg-green-500/10 border border-green-500/20 rounded-md">
-                    <h4 className="text-sm font-medium text-green-400 mb-2">
-                      ✅ Verification Results
-                    </h4>
-                    <div className="text-sm text-green-300">
-                      <p>
-                        <strong>Status:</strong> {verificationResults.status}
-                      </p>
-                      <p>
-                        <strong>Credential ID:</strong>{" "}
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(verificationResults as any).credentialId || "N/A"}
-                      </p>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(verificationResults as any).verificationTime && (
-                        <p>
-                          <strong>Verified At:</strong>{" "}
-                          {new Date(
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            (verificationResults as any).verificationTime
-                          ).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                    <details className="mt-2">
-                      <summary className="text-xs text-green-400 cursor-pointer">
-                        View Full Results
-                      </summary>
-                      <pre className="text-xs text-green-300 bg-green-500/10 p-2 rounded mt-1 overflow-auto">
-                        {JSON.stringify(verificationResults, null, 2)}
-                      </pre>
-                    </details>
-                  </div>
-                )}
-
-                {/* Error Display */}
-                {errorMessage && (
-                  <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-md">
-                    <h4 className="text-sm font-medium text-red-400 mb-2">
-                      ❌ Verification Error
-                    </h4>
-                    <p className="text-sm text-red-300">{errorMessage}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Login prompt for non-logged-in users */}
-          {!isLoggedIn && (
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6 max-w-2xl mx-auto text-center">
-              <p className="text-yellow-400 mb-4">
-                ⚠️ Please login to interact with this frame and use verification
-                features.
-              </p>
-            </div>
-          )}
+        <div className="text-white text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4">Login Required</h1>
+          <p className="text-white/70 mb-6">
+            Please login to access this frame and use verification features.
+          </p>
         </div>
       </div>
-    </Layout>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Frame Display - Reconstructed inline */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="w-full max-w-2xl">
+            <div
+              className="rounded-xl overflow-hidden min-h-[400px] relative"
+              style={{ backgroundColor: config.backgroundColor }}
+            >
+              {/* Background image with blur fallback */}
+              {config.backgroundImage && (
+                <>
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage: `url(${config.backgroundImage})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
+                      filter: "blur(20px)",
+                      transform: "scale(1.1)",
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage: `url(${config.backgroundImage})`,
+                      backgroundSize: "contain",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  />
+                </>
+              )}
+
+              {/* Gradient overlay for text visibility */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+
+              <div className="relative z-10 p-8 h-full flex flex-col">
+                {/* Logo positioned top right */}
+                <div className="flex justify-end mb-6">
+                  {config.logo && (
+                    <img
+                      src={config.logo}
+                      alt="Logo"
+                      className="h-20 w-20 object-cover rounded-full border-3 border-white/40 shadow-lg"
+                    />
+                  )}
+                </div>
+
+                {/* Main content */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div className="max-w-md">
+                    <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+                      {config.title}
+                    </h1>
+                    <p className="text-white/90 text-lg mb-6 leading-relaxed">
+                      {config.description}
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-white/70 mb-6">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                      <span>{config.verificationRequirement}</span>
+                    </div>
+                  </div>
+
+                  {/* Verification Button integrated into frame */}
+                  <div className="mt-8">
+                    <VerifyButton
+                      partnerId={partnerId}
+                      verifierDid={
+                        process.env.NEXT_PUBLIC_VERIFIER_DID ||
+                        "did:example:verifier123"
+                      }
+                      apiKey={
+                        process.env.NEXT_PUBLIC_VERIFIER_API_KEY ||
+                        "your-verifier-api-key"
+                      }
+                      programId={
+                        config.credentialId ||
+                        process.env.NEXT_PUBLIC_PROGRAM_ID ||
+                        "c21hg030taxui0091199Ic"
+                      }
+                      redirectUrlForIssuer={
+                        process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
+                        "http://localhost:3000/issue"
+                      }
+                      onVerificationComplete={handleVerificationComplete}
+                      onError={handleVerificationError}
+                      text={config.buttonText}
+                      className={`px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-105 shadow-lg text-white ${
+                        config.buttonColor
+                          ? ""
+                          : "bg-orange-500 hover:bg-orange-600"
+                      }`}
+                      style={
+                        config.buttonColor
+                          ? { backgroundColor: config.buttonColor }
+                          : {}
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {errorMessage && (
+          <div className="max-w-2xl mx-auto mb-6">
+            <div className="p-4 bg-red-500/10 text-red-300 rounded-lg">
+              <p>❌ {errorMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ABI Section - Show after verification */}
+        {showAbi && verificationResults && (
+          <div className="max-w-2xl mx-auto">
+            <div className="p-6 bg-white text-black rounded-lg">
+              <h3 className="text-lg font-semibold mb-4">ABI Section</h3>
+              <div className="space-y-2">
+                <p>
+                  <strong>Status:</strong> {verificationResults.status}
+                </p>
+                <p>
+                  <strong>Credential ID:</strong>{" "}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {(verificationResults as any).credentialId || "N/A"}
+                </p>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {(verificationResults as any).verificationTime && (
+                  <p>
+                    <strong>Verified At:</strong>{" "}
+                    {new Date(
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      (verificationResults as any).verificationTime
+                    ).toLocaleString()}
+                  </p>
+                )}
+                <details className="mt-4">
+                  <summary className="cursor-pointer font-medium">
+                    View Full Verification Results
+                  </summary>
+                  <pre className="mt-2 p-3 bg-gray-100 text-sm overflow-auto">
+                    {JSON.stringify(verificationResults, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
