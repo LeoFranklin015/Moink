@@ -3,12 +3,9 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/frame",
+        // Headers for the embed page
+        source: "/embed",
         headers: [
-          {
-            key: "X-Frame-Options",
-            value: "ALLOWALL",
-          },
           {
             key: "Content-Security-Policy",
             value: "frame-ancestors *;",
@@ -16,12 +13,9 @@ const nextConfig = {
         ],
       },
       {
+        // Headers for the frame page
         source: "/frame",
         headers: [
-          {
-            key: "X-Frame-Options",
-            value: "ALLOWALL",
-          },
           {
             key: "Content-Security-Policy",
             value: "frame-ancestors *;",

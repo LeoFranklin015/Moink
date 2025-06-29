@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
+import { Navbar } from "@/components/Navbar";
+import { VerifyButton } from "@/components/VerifyButton";
+import DonatePage from "../frame/page";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Nami AI | Donations",
     description:
-      "An autonomous agent that discovers global disasters, collect donations and keeps NGO’s accountable.",
+      "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.",
     openGraph: {
       title: "Nami AI | Donations",
       description:
-        "An autonomous agent that discovers global disasters, collect donations and keeps NGO’s accountable.",
+        "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.",
       images: ["/logo.png"],
     },
     other: {
       "twitter:player": `https://moink.vercel.app/embed`,
-      "x-frame-options": "ALLOWALL",
       "content-security-policy": "frame-ancestors *;",
     },
     twitter: {
@@ -22,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Nami AI | Donations",
       images: ["https://stark-nami-ai.vercel.app/logo.png"],
       description:
-        "An autonomous agent that discovers global disasters, collect donations and keeps NGO’s accountable.",
+        "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.",
       players: [
         {
           playerUrl: `https://moink.vercel.app/embed`,
@@ -34,29 +36,19 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
-export default function EmbedPage() {
-  // Use absolute URL for iframe source to work properly when embedded
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    (process.env.NODE_ENV === "production"
-      ? "https://moink.vercel.app"
-      : "http://localhost:3000");
-  const frameUrl = `${baseUrl}/frame`;
 
+export default function EmbedPage() {
+  // Directly render the frame content without nested iframe
   return (
-    <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
-      <iframe
-        src={frameUrl}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
-        allow="fullscreen; web3"
-      ></iframe>
+    <div
+      style={{
+        width: "100%",
+        height: "100vh",
+        backgroundColor: "#f9fafb",
+        overflow: "auto",
+      }}
+    >
+      <DonatePage />
     </div>
   );
 }
