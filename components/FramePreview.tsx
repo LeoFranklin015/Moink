@@ -69,6 +69,7 @@ export function FramePreview({ config }: FramePreviewProps) {
       setError("");
       return targetFunction.inputs || [];
     } catch (err) {
+      console.log(err);
       setError("Invalid ABI format");
       return null;
     }
