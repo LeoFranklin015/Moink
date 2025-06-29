@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
-import DonatePage from "../frame/page";
+import DonatePage from "../../frame/page";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+
   return {
     title: "Nami AI | Donations",
     description:
@@ -13,8 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
       images: ["/logo.png"],
     },
     other: {
-      "twitter:player": `https://moink.crevn.xyz/embed`,
-      "content-security-policy": "frame-ancestors *;",
+      "twitter:player": `https://moink.crevn.xyz/embed/${id}`,
+      "content-security-policy":
+        "frame-ancestors 'self' https://twitter.com https://x.com https://platform.twitter.com https://tweetdeck.twitter.com;",
     },
     twitter: {
       card: "player",
@@ -25,8 +32,8 @@ export async function generateMetadata(): Promise<Metadata> {
         "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.",
       players: [
         {
-          playerUrl: `https://moink.crevn.xyz/embed`,
-          streamUrl: `https://moink.crevn.xyz/embed`,
+          playerUrl: `https://moink.crevn.xyz/embed/${id}`,
+          streamUrl: `https://moink.crevn.xyz/embed/${id}`,
           width: 360,
           height: 560,
         },
@@ -35,7 +42,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function EmbedPage() {
+export default async function EmbedPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  console.log(id);
   // Directly render the frame content without nested iframe
   return (
     <div
@@ -46,7 +59,7 @@ export default function EmbedPage() {
         overflow: "auto",
       }}
     >
-      <DonatePage configId={`configId`} />
+      <DonatePage configId={id} />
     </div>
   );
 }

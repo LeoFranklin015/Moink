@@ -78,6 +78,15 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
   className = "",
   children,
 }) => {
+  console.log("VerifyButton props:", {
+    partnerId,
+    verifierDid,
+    apiKey,
+    programId,
+    redirectUrlForIssuer,
+    onVerificationComplete,
+  });
+
   // AirService state management
   const [airService, setAirService] = useState<AirService | null>(null);
   const [isAirServiceInitialized, setIsAirServiceInitialized] = useState(false);
