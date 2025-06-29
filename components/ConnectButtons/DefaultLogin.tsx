@@ -2,10 +2,29 @@
 import { useConnect } from "wagmi";
 import { useConfig } from "wagmi";
 import { Button } from "../common/Button";
+import { useState, useEffect } from "react";
 
 export const DefaultLogin = () => {
   const { connect, isPending: isConnecting } = useConnect();
   const config = useConfig();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) {
+    return (
+      <div className="max-w-md mx-auto">
+        <Button
+          disabled
+          className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm"
+        >
+          Connect Wallet
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto">
       <Button

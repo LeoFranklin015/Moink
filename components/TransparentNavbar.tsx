@@ -13,12 +13,18 @@ export const TransparentNavbar = () => {
   const { disconnect, isPending: isDisconnecting } = useDisconnect();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   // Format address to show first 4 and last 4 characters
   const formatAddress = (addr: string) => {
     if (!addr) return "";
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
+
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -36,7 +42,7 @@ export const TransparentNavbar = () => {
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 px-4 lg:px-8 py-4">
+    <nav className="fixed top-0 left-0 right-0 z-50 px-4 lg:px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm">
       <div className="flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="text-white font-semibold text-xl">
@@ -79,7 +85,15 @@ export const TransparentNavbar = () => {
 
         {/* Desktop Wallet Connection */}
         <div className="hidden md:flex items-center space-x-4">
-          {isConnecting ? (
+          {!mounted ? (
+            <Button
+              disabled
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm"
+              size="sm"
+            >
+              Connecting...
+            </Button>
+          ) : isConnecting ? (
             <Button
               disabled
               className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm"
@@ -139,13 +153,6 @@ export const TransparentNavbar = () => {
           ) : (
             <div className="flex items-center space-x-4">
               <DefaultLogin />
-              <Button
-                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5"
-                size="sm"
-              >
-                Get Started
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
             </div>
           )}
         </div>
@@ -200,7 +207,19 @@ export const TransparentNavbar = () => {
             <hr className="border-white/20" />
 
             {/* Mobile Wallet Connection */}
-            {isConnecting ? (
+            {!mounted ? (
+              // Show loading state during hydration to match server render
+              <div className="space-y-4">
+                <div className="w-full h-12 bg-white/10 rounded-lg animate-pulse"></div>
+                <Button
+                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm w-full justify-center"
+                  size="sm"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            ) : isConnecting ? (
               <Button
                 disabled
                 className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm w-full justify-center"
