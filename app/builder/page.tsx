@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Play } from "lucide-react";
+import { ArrowLeft, Play, Save, Copy, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FramePreview } from "@/components/FramePreview";
@@ -207,8 +207,61 @@ export default function FrameBuilder() {
     functionName: "verifyKYC",
   });
 
+  const [savedConfigId, setSavedConfigId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   const updateConfig = (key: keyof FrameConfig, value: string) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
+    // Reset saved state when config changes
+    if (savedConfigId) {
+      setSavedConfigId(null);
+    }
+  };
+
+  const saveConfig = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/configs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ config }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSavedConfigId(data.id);
+        console.log(`Config saved! ID: ${data.id}`);
+      } else {
+        console.error(data.error || "Failed to save config");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const copyConfigId = () => {
+    if (savedConfigId) {
+      navigator.clipboard.writeText(savedConfigId);
+    }
+  };
+
+  const copyEmbedUrl = () => {
+    if (savedConfigId) {
+      const embedUrl = `${window.location.origin}/embed?id=${savedConfigId}`;
+      navigator.clipboard.writeText(embedUrl);
+    }
+  };
+
+  const openPreview = () => {
+    if (savedConfigId) {
+      const previewUrl = `${window.location.origin}/frame?id=${savedConfigId}`;
+      window.open(previewUrl, "_blank");
+    }
   };
 
   return (
@@ -230,17 +283,44 @@ export default function FrameBuilder() {
           <Button
             variant="ghost"
             size="sm"
+            onClick={saveConfig}
+            disabled={isSaving}
             className="text-white/70 hover:text-white hover:bg-white/5 h-8 px-3 text-xs"
           >
-            Save
+            <Save className="h-3 w-3 mr-1.5" />
+            {isSaving ? "Saving..." : savedConfigId ? "Saved ✓" : "Save"}
           </Button>
-          <Button
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs"
-          >
-            <Play className="h-3 w-3 mr-1.5" />
-            Deploy
-          </Button>
+          {savedConfigId && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyConfigId}
+                className="text-white/70 hover:text-white hover:bg-white/5 h-8 px-3 text-xs"
+              >
+                <Copy className="h-3 w-3 mr-1.5" />
+                Copy ID
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyEmbedUrl}
+                className="text-white/70 hover:text-white hover:bg-white/5 h-8 px-3 text-xs"
+              >
+                <Copy className="h-3 w-3 mr-1.5" />
+                Copy Embed URL
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openPreview}
+                className="text-white/70 hover:text-white hover:bg-white/5 h-8 px-3 text-xs"
+              >
+                <ExternalLink className="h-3 w-3 mr-1.5" />
+                Preview
+              </Button>
+            </>
+          )}
         </div>
       </header>
 
