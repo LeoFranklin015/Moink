@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images: ["/logo.png"],
     },
     other: {
-      "twitter:player": `https://christine-medicine-possibilities-yield.trycloudflare.com/embed`,
+      "twitter:player": `https://moink.vercel.app/embed`,
       "x-frame-options": "ALLOWALL",
       "content-security-policy": "frame-ancestors *;",
     },
@@ -25,8 +25,8 @@ export async function generateMetadata(): Promise<Metadata> {
         "An autonomous agent that discovers global disasters, collect donations and keeps NGO’s accountable.",
       players: [
         {
-          playerUrl: `https://christine-medicine-possibilities-yield.trycloudflare.com/embed`,
-          streamUrl: `https://christine-medicine-possibilities-yield.trycloudflare.com/embed`,
+          playerUrl: `https://moink.vercel.app/embed`,
+          streamUrl: `https://moink.vercel.app/embed`,
           width: 360,
           height: 560,
         },
