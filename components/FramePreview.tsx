@@ -133,7 +133,7 @@ export function FramePreview({ config }: FramePreviewProps) {
               <span className="text-white/50 text-sm">Sponsored</span>
             </div>
             <p className="text-white/90 text-sm mt-1 leading-relaxed">
-              🔥 Exclusive opportunity! Limited time access to premium features
+              Create your frame here to maximize your engagement and conversions
             </p>
           </div>
           <button className="text-white/50 hover:text-white/70 p-1">
@@ -153,39 +153,49 @@ export function FramePreview({ config }: FramePreviewProps) {
               aspectRatio: "1/1",
             }}
           >
-            {/* Blurred background layer for images that don't fit */}
+            {/* Extended blur background - covers entire frame */}
             {config.backgroundImage && (
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url(${config.backgroundImage})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                  filter: "blur(20px)",
-                  transform: "scale(1.1)",
-                }}
-              ></div>
+              <>
+                {/* Full blur coverage background */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${config.backgroundImage})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                    filter: "blur(25px)",
+                    transform: "scale(1.2)",
+                  }}
+                />
+                {/* Stronger blur overlay for better coverage */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${config.backgroundImage})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                    filter: "blur(15px)",
+                    opacity: 0.7,
+                    transform: "scale(1.15)",
+                  }}
+                />
+                {/* Main image layer */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${config.backgroundImage})`,
+                    backgroundSize: "contain",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
+              </>
             )}
 
-            {/* Main background image */}
-            {config.backgroundImage && (
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url(${config.backgroundImage})`,
-                  backgroundSize: "contain",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                }}
-              ></div>
-            )}
-
-            {/* Gradient Overlay for Text Visibility */}
-            <div className="absolute inset-0">
-              {/* Gradient overlay from dark left to transparent right */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
-            </div>
+            {/* Enhanced gradient overlay for better text visibility */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
 
             <div className="relative z-10 p-6 h-full flex flex-col">
               {/* Top Section: Logo positioned top right (only if provided) */}
@@ -354,15 +364,6 @@ export function FramePreview({ config }: FramePreviewProps) {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Frame Footer */}
-          <div className="mt-3 flex items-center justify-between text-xs text-white/40">
-            <span>From moink.vercel.app</span>
-            <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Live</span>
             </div>
           </div>
         </div>

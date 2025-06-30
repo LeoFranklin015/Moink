@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeaturesSection } from "@/components/features-section";
 import { TransparentNavbar } from "@/components/TransparentNavbar";
+import Link from "next/link";
 
 export default function LandingPage() {
   return (
@@ -99,21 +100,29 @@ export default function LandingPage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <Button
-                  size="lg"
-                  className="bg-blue-500/90 hover:bg-blue-500 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 px-10 py-4 text-lg font-medium"
-                >
-                  Start Converting on Twitter
-                  <ArrowRight className="ml-3 h-6 w-6" />
-                </Button>
+                <Link href="/builder">
+                  <Button
+                    size="lg"
+                    className="bg-blue-500/90 hover:bg-blue-500 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 px-10 py-4 text-lg font-medium"
+                  >
+                    Start Creating Frames
+                    <ArrowRight className="ml-3 h-6 w-6" />
+                  </Button>
+                </Link>
 
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 px-10 py-4 text-lg font-medium"
+                <Link
+                  href="https://x.com/IdeaManPaul/status/1939620719765389818"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  See Demo Frame
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 px-10 py-4 text-lg font-medium"
+                  >
+                    See Demo Frame
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
