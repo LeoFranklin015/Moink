@@ -19,7 +19,7 @@ export async function generateMetadata({
       images: ["/logo.png"],
     },
     other: {
-      "twitter:player": `https://fastest-salary-seed-headlines.trycloudflare.com/embed/${id}`,
+      "twitter:player": `https://moink.crevn.xyz/embed/${id}`,
       "content-security-policy":
         "frame-ancestors 'self' https://twitter.com https://x.com https://platform.twitter.com https://tweetdeck.twitter.com;",
     },
@@ -32,8 +32,8 @@ export async function generateMetadata({
         "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.",
       players: [
         {
-          playerUrl: `https://fastest-salary-seed-headlines.trycloudflare.com/embed/${id}`,
-          streamUrl: `https://fastest-salary-seed-headlines.trycloudflare.com/embed/${id}`,
+          playerUrl: `https://moink.crevn.xyz/embed/${id}`,
+          streamUrl: `https://moink.crevn.xyz/embed/${id}`,
           width: 360,
           height: 560,
         },
