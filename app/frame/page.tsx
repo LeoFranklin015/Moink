@@ -26,6 +26,8 @@ export default function DonatePage({ configId }: { configId: string }) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionSuccess, setExecutionSuccess] = useState(false);
   const [executionError, setExecutionError] = useState<string | null>(null);
+  const [transactionHash, setTransactionHash] = useState<string | null>(null);
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
 
   // Fetch config on mount
   useEffect(() => {
@@ -122,9 +124,16 @@ export default function DonatePage({ configId }: { configId: string }) {
   const handleBack = () => {
     setShowInputs(false);
     setShowAbi(false);
+    setShowSuccessScreen(false);
     setErrorMessage(null);
     setExecutionError(null);
     setExecutionSuccess(false);
+    setTransactionHash(null);
+  };
+
+  const handleCloseSuccessScreen = () => {
+    setShowSuccessScreen(false);
+    setShowAbi(true);
   };
 
   const handleExecuteFunction = async () => {
@@ -215,9 +224,10 @@ export default function DonatePage({ configId }: { configId: string }) {
       const txHash = await walletClient.writeContract(contractCallParams);
 
       console.log("Transaction successful! Hash:", txHash);
+      setTransactionHash(txHash);
       setExecutionSuccess(true);
       setShowInputs(false);
-      setShowAbi(true);
+      setShowSuccessScreen(true);
     } catch (error) {
       console.error("Contract execution error:", error);
       setExecutionError(
@@ -407,6 +417,82 @@ export default function DonatePage({ configId }: { configId: string }) {
                       />
                     </div>
                   </>
+                ) : showSuccessScreen ? (
+                  /* Success Screen - Transaction Complete */
+                  <div className="w-full max-w-lg bg-black/80 backdrop-blur-md border border-green-400/30 rounded-xl p-8 shadow-2xl">
+                    <div className="text-center">
+                      {/* Success Icon */}
+                      <div className="mb-6">
+                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-400/50">
+                          <div className="text-4xl">🎉</div>
+                        </div>
+                        <h4
+                          className="text-white font-bold text-2xl mb-2 font-cinzel"
+                          style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
+                        >
+                          Transaction Successful!
+                        </h4>
+                        <p className="text-green-300 text-lg font-medium">
+                          {config.functionName} executed successfully
+                        </p>
+                      </div>
+
+                      {/* Transaction Details */}
+                      <div className="space-y-4 mb-6">
+                        <div className="p-4 bg-green-500/10 border border-green-400/30 rounded-lg">
+                          <p className="text-white/70 text-sm mb-2">
+                            Transaction Hash:
+                          </p>
+                          <div className="flex items-center justify-between bg-black/40 rounded-lg p-3">
+                            <code className="text-green-300 text-xs font-mono break-all mr-3">
+                              {transactionHash}
+                            </code>
+                            <button
+                              onClick={() =>
+                                transactionHash &&
+                                navigator.clipboard.writeText(transactionHash)
+                              }
+                              className="text-white/70 hover:text-white transition-colors flex-shrink-0"
+                              title="Copy to clipboard"
+                            >
+                              📋
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Explorer Link */}
+                        <a
+                          href={`https://devnet-scan.mocachain.org/tx/${transactionHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full bg-blue-600/20 hover:bg-blue-600/30 border border-blue-400/30 rounded-lg p-4 transition-all duration-200 hover:scale-105"
+                        >
+                          <div className="flex items-center justify-center space-x-2">
+                            <span className="text-blue-300 font-medium">
+                              View on Moca Explorer
+                            </span>
+                            <span className="text-blue-300">🔗</span>
+                          </div>
+                        </a>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={handleBack}
+                          className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-lg transition-colors text-base border border-white/30 font-cinzel"
+                        >
+                          Start Over
+                        </button>
+                        <button
+                          onClick={handleCloseSuccessScreen}
+                          className="flex-1 bg-green-600/20 hover:bg-green-600/30 backdrop-blur-sm text-green-300 font-bold py-3 px-6 rounded-lg transition-colors text-base border border-green-400/30 font-cinzel"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   /* ABI Input Form - Centered overlay */
                   <div className="w-full max-w-md bg-black/80 backdrop-blur-md border border-white/20 rounded-xl p-6 shadow-2xl">
@@ -542,7 +628,7 @@ export default function DonatePage({ configId }: { configId: string }) {
               {/* Contract Execution Results */}
               <div className="space-y-2 mb-6 border-t pt-4">
                 <h4 className="font-medium text-lg">Contract Execution</h4>
-                {executionSuccess ? (
+                {executionSuccess && transactionHash ? (
                   <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700">
                     <p>
                       ✅ Contract function {config?.functionName} executed
@@ -551,6 +637,24 @@ export default function DonatePage({ configId }: { configId: string }) {
                     <p className="text-sm mt-1">
                       Transaction has been submitted to the blockchain.
                     </p>
+                    <div className="mt-3 p-2 bg-green-100 rounded border">
+                      <p className="text-xs text-green-600 mb-1">
+                        Transaction Hash:
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <code className="text-xs font-mono text-green-800 break-all mr-2">
+                          {transactionHash}
+                        </code>
+                        <a
+                          href={`https://devnet-scan.mocachain.org/tx/${transactionHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-xs underline flex-shrink-0"
+                        >
+                          View on Explorer
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="p-3 bg-gray-50 border rounded text-gray-700">
