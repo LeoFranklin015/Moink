@@ -346,78 +346,7 @@ export default function DonatePage({ configId }: { configId: string }) {
               <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
 
               <div className="relative z-10 p-8 h-full flex flex-col justify-center items-start text-left">
-                {!showInputs ? (
-                  <>
-                    {/* Logo positioned at top left */}
-                    <div className="mb-8">
-                      {config.logo && (
-                        <img
-                          src={config.logo}
-                          alt="Logo"
-                          className="h-24 w-24 object-cover rounded-full border-4 border-white/40 shadow-2xl"
-                        />
-                      )}
-                    </div>
-
-                    {/* Centered main content */}
-                    <div className="max-w-lg">
-                      <h1
-                        className="text-4xl font-bold text-white mb-6 leading-tight font-cinzel"
-                        style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.9)" }}
-                      >
-                        {config.title}
-                      </h1>
-                      <p
-                        className="text-white/95 text-lg mb-8 leading-relaxed"
-                        style={{ textShadow: "1px 1px 4px rgba(0,0,0,0.8)" }}
-                      >
-                        {config.description}
-                      </p>
-                      <div className="flex items-center justify-start gap-2 text-sm text-white/80 mb-8">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                        <span
-                          className="font-cinzel font-medium"
-                          style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
-                        >
-                          {config.verificationRequirement}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Left-aligned Verification Button */}
-                    <div className="mt-4">
-                      <VerifyButton
-                        partnerId={partnerId}
-                        verifierDid={
-                          process.env.NEXT_PUBLIC_VERIFIER_DID ||
-                          "did:example:verifier123"
-                        }
-                        apiKey={
-                          process.env.NEXT_PUBLIC_VERIFIER_API_KEY ||
-                          "your-verifier-api-key"
-                        }
-                        programId={
-                          config.credentialId ||
-                          process.env.NEXT_PUBLIC_PROGRAM_ID ||
-                          "c21hg030taxui0091199Ic"
-                        }
-                        redirectUrlForIssuer={
-                          process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
-                          "http://localhost:3000/issue"
-                        }
-                        onVerificationComplete={handleVerificationComplete}
-                        onError={handleVerificationError}
-                        text={config.buttonText}
-                        className="px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-105 shadow-2xl text-white border-2 border-white/30 backdrop-blur-sm font-cinzel"
-                        style={{
-                          backgroundColor: config.buttonColor || "#f97316",
-                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-                          boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
-                        }}
-                      />
-                    </div>
-                  </>
-                ) : showSuccessScreen ? (
+                {showSuccessScreen ? (
                   /* Success Screen - Transaction Complete */
                   <div className="w-full max-w-lg bg-black/80 backdrop-blur-md border border-green-400/30 rounded-xl p-8 shadow-2xl">
                     <div className="text-center">
@@ -493,7 +422,7 @@ export default function DonatePage({ configId }: { configId: string }) {
                       </div>
                     </div>
                   </div>
-                ) : (
+                ) : showInputs ? (
                   /* ABI Input Form - Centered overlay */
                   <div className="w-full max-w-md bg-black/80 backdrop-blur-md border border-white/20 rounded-xl p-6 shadow-2xl">
                     <div className="mb-6 text-center">
@@ -579,6 +508,77 @@ export default function DonatePage({ configId }: { configId: string }) {
                       </button>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    {/* Logo positioned at top left */}
+                    <div className="mb-8">
+                      {config.logo && (
+                        <img
+                          src={config.logo}
+                          alt="Logo"
+                          className="h-24 w-24 object-cover rounded-full border-4 border-white/40 shadow-2xl"
+                        />
+                      )}
+                    </div>
+
+                    {/* Centered main content */}
+                    <div className="max-w-lg">
+                      <h1
+                        className="text-4xl font-bold text-white mb-6 leading-tight font-cinzel"
+                        style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.9)" }}
+                      >
+                        {config.title}
+                      </h1>
+                      <p
+                        className="text-white/95 text-lg mb-8 leading-relaxed"
+                        style={{ textShadow: "1px 1px 4px rgba(0,0,0,0.8)" }}
+                      >
+                        {config.description}
+                      </p>
+                      <div className="flex items-center justify-start gap-2 text-sm text-white/80 mb-8">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                        <span
+                          className="font-cinzel font-medium"
+                          style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
+                        >
+                          {config.verificationRequirement}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Left-aligned Verification Button */}
+                    <div className="mt-4">
+                      <VerifyButton
+                        partnerId={partnerId}
+                        verifierDid={
+                          process.env.NEXT_PUBLIC_VERIFIER_DID ||
+                          "did:example:verifier123"
+                        }
+                        apiKey={
+                          process.env.NEXT_PUBLIC_VERIFIER_API_KEY ||
+                          "your-verifier-api-key"
+                        }
+                        programId={
+                          config.credentialId ||
+                          process.env.NEXT_PUBLIC_PROGRAM_ID ||
+                          "c21hg030taxui0091199Ic"
+                        }
+                        redirectUrlForIssuer={
+                          process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
+                          "http://localhost:3000/issue"
+                        }
+                        onVerificationComplete={handleVerificationComplete}
+                        onError={handleVerificationError}
+                        text={config.buttonText}
+                        className="px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-105 shadow-2xl text-white border-2 border-white/30 backdrop-blur-sm font-cinzel"
+                        style={{
+                          backgroundColor: config.buttonColor || "#f97316",
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+                        }}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </div>
