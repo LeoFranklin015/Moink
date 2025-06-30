@@ -17,6 +17,9 @@ export default function DonatePage({ configId }: { configId: string }) {
     useState<VerificationResults | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showAbi, setShowAbi] = useState(false);
+  const [showInputs, setShowInputs] = useState(false);
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
+  const [functionInputs, setFunctionInputs] = useState<any[]>([]);
 
   // Fetch config on mount
   useEffect(() => {
@@ -47,17 +50,85 @@ export default function DonatePage({ configId }: { configId: string }) {
     fetchConfig();
   }, [configId]);
 
+  const parseAbiAndFindFunction = (): any[] | null => {
+    try {
+      if (!config?.abi || !config?.functionName) {
+        setErrorMessage("ABI or function name not provided");
+        return null;
+      }
+
+      const parsedAbi = JSON.parse(config.abi);
+      const targetFunction = parsedAbi.find(
+        (item: any) =>
+          item.type === "function" && item.name === config.functionName
+      );
+
+      if (!targetFunction) {
+        setErrorMessage(`Function "${config.functionName}" not found in ABI`);
+        return null;
+      }
+
+      return targetFunction.inputs || [];
+    } catch (err) {
+      console.log(err);
+      setErrorMessage("Invalid ABI format");
+      return null;
+    }
+  };
+
   const handleVerificationComplete = (results: VerificationResults) => {
     console.log("Verification completed:", results);
     setVerificationResults(results);
     setErrorMessage(null);
-    setShowAbi(true);
+
+    // Parse ABI and show inputs
+    const inputs = parseAbiAndFindFunction();
+    if (inputs) {
+      setFunctionInputs(inputs);
+      // Initialize input values
+      const initialValues: Record<string, string> = {};
+      inputs.forEach((input: any) => {
+        initialValues[input.name] = "";
+      });
+      setInputValues(initialValues);
+      setShowInputs(true);
+    } else {
+      setShowAbi(true);
+    }
   };
 
   const handleVerificationError = (error: string) => {
     console.error("Verification error:", error);
     setErrorMessage(error);
     setVerificationResults(null);
+  };
+
+  const handleInputChange = (paramName: string, value: string) => {
+    setInputValues((prev) => ({
+      ...prev,
+      [paramName]: value,
+    }));
+  };
+
+  const handleBack = () => {
+    setShowInputs(false);
+    setShowAbi(false);
+    setErrorMessage(null);
+  };
+
+  const handleExecuteFunction = () => {
+    console.log("Executing function with values:", inputValues);
+    // Here you would typically call the smart contract function
+    setShowInputs(false);
+    setShowAbi(true);
+  };
+
+  const getInputPlaceholder = (type: string) => {
+    if (type.includes("address")) return "0x...";
+    if (type.includes("uint")) return "0";
+    if (type.includes("string")) return "Enter text";
+    if (type.includes("bool")) return "true/false";
+    return `${type} value`;
   };
 
   // Loading state
@@ -77,7 +148,9 @@ export default function DonatePage({ configId }: { configId: string }) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-4">Frame Not Found</h1>
+          <h1 className="text-2xl font-bold mb-4 font-cinzel">
+            Frame Not Found
+          </h1>
           <p className="text-white/70 mb-6">
             {error || "The requested frame could not be loaded."}
           </p>
@@ -91,7 +164,9 @@ export default function DonatePage({ configId }: { configId: string }) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="text-white text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-4">Login Required</h1>
+          <h1 className="text-2xl font-bold mb-4 font-cinzel">
+            Login Required
+          </h1>
           <p className="text-white/70 mb-6">
             Please login to access this frame and use verification features.
           </p>
@@ -104,16 +179,17 @@ export default function DonatePage({ configId }: { configId: string }) {
   return (
     <div className="min-h-screen bg-black p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Frame Display - Reconstructed inline */}
-        <div className="flex items-center justify-center mb-8">
+        {/* Frame Display - Full coverage with better blur */}
+        <div className="flex items-center justify-center">
           <div className="w-full max-w-2xl">
             <div
-              className="rounded-xl overflow-hidden min-h-[400px] relative"
+              className="rounded-xl overflow-hidden relative aspect-[4/4]"
               style={{ backgroundColor: config.backgroundColor }}
             >
-              {/* Background image with blur fallback */}
+              {/* Extended blur background - covers entire frame */}
               {config.backgroundImage && (
                 <>
+                  {/* Full blur coverage background */}
                   <div
                     className="absolute inset-0"
                     style={{
@@ -121,10 +197,24 @@ export default function DonatePage({ configId }: { configId: string }) {
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                       backgroundRepeat: "no-repeat",
-                      filter: "blur(20px)",
-                      transform: "scale(1.1)",
+                      filter: "blur(25px)",
+                      transform: "scale(1.2)",
                     }}
                   />
+                  {/* Stronger blur overlay for better coverage */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage: `url(${config.backgroundImage})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
+                      filter: "blur(15px)",
+                      opacity: 0.7,
+                      transform: "scale(1.15)",
+                    }}
+                  />
+                  {/* Main image layer */}
                   <div
                     className="absolute inset-0"
                     style={{
@@ -137,73 +227,148 @@ export default function DonatePage({ configId }: { configId: string }) {
                 </>
               )}
 
-              {/* Gradient overlay for text visibility */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+              {/* Enhanced gradient overlay for better text visibility */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
 
-              <div className="relative z-10 p-8 h-full flex flex-col">
-                {/* Logo positioned top right */}
-                <div className="flex justify-end mb-6">
-                  {config.logo && (
-                    <img
-                      src={config.logo}
-                      alt="Logo"
-                      className="h-20 w-20 object-cover rounded-full border-3 border-white/40 shadow-lg"
-                    />
-                  )}
-                </div>
+              <div className="relative z-10 p-8 h-full flex flex-col justify-center items-start text-left">
+                {!showInputs ? (
+                  <>
+                    {/* Logo positioned at top left */}
+                    <div className="mb-8">
+                      {config.logo && (
+                        <img
+                          src={config.logo}
+                          alt="Logo"
+                          className="h-24 w-24 object-cover rounded-full border-4 border-white/40 shadow-2xl"
+                        />
+                      )}
+                    </div>
 
-                {/* Main content */}
-                <div className="flex-1 flex flex-col justify-between">
-                  <div className="max-w-md">
-                    <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-                      {config.title}
-                    </h1>
-                    <p className="text-white/90 text-lg mb-6 leading-relaxed">
-                      {config.description}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm text-white/70 mb-6">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                      <span>{config.verificationRequirement}</span>
+                    {/* Centered main content */}
+                    <div className="max-w-lg">
+                      <h1
+                        className="text-4xl font-bold text-white mb-6 leading-tight font-cinzel"
+                        style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.9)" }}
+                      >
+                        {config.title}
+                      </h1>
+                      <p
+                        className="text-white/95 text-lg mb-8 leading-relaxed"
+                        style={{ textShadow: "1px 1px 4px rgba(0,0,0,0.8)" }}
+                      >
+                        {config.description}
+                      </p>
+                      <div className="flex items-center justify-start gap-2 text-sm text-white/80 mb-8">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                        <span
+                          className="font-cinzel font-medium"
+                          style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
+                        >
+                          {config.verificationRequirement}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Left-aligned Verification Button */}
+                    <div className="mt-4">
+                      <VerifyButton
+                        partnerId={partnerId}
+                        verifierDid={
+                          process.env.NEXT_PUBLIC_VERIFIER_DID ||
+                          "did:example:verifier123"
+                        }
+                        apiKey={
+                          process.env.NEXT_PUBLIC_VERIFIER_API_KEY ||
+                          "your-verifier-api-key"
+                        }
+                        programId={
+                          config.credentialId ||
+                          process.env.NEXT_PUBLIC_PROGRAM_ID ||
+                          "c21hg030taxui0091199Ic"
+                        }
+                        redirectUrlForIssuer={
+                          process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
+                          "http://localhost:3000/issue"
+                        }
+                        onVerificationComplete={handleVerificationComplete}
+                        onError={handleVerificationError}
+                        text={config.buttonText}
+                        className="px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-105 shadow-2xl text-white border-2 border-white/30 backdrop-blur-sm font-cinzel"
+                        style={{
+                          backgroundColor: config.buttonColor || "#f97316",
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+                        }}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  /* ABI Input Form - Centered overlay */
+                  <div className="w-full max-w-md bg-black/80 backdrop-blur-md border border-white/20 rounded-xl p-6 shadow-2xl">
+                    <div className="mb-6 text-center">
+                      <h4
+                        className="text-white font-semibold text-xl mb-2 font-cinzel"
+                        style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
+                      >
+                        Complete Verification
+                      </h4>
+                      <p className="text-white/70 text-sm">
+                        Fill in the required parameters
+                      </p>
+                    </div>
+
+                    {/* Function Inputs */}
+                    <div className="space-y-4 mb-6">
+                      {functionInputs.map((input: any, index: number) => (
+                        <div key={index}>
+                          <label className="block text-white/90 text-sm mb-2 font-medium font-cinzel">
+                            {input.name}
+                            <span className="text-white/70 ml-1 text-xs">
+                              ({input.type})
+                            </span>
+                          </label>
+                          <input
+                            type="text"
+                            value={inputValues[input.name] || ""}
+                            onChange={(e) =>
+                              handleInputChange(input.name, e.target.value)
+                            }
+                            placeholder={getInputPlaceholder(input.type)}
+                            className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-400/50 focus:bg-white/20 placeholder-white/50"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleBack}
+                        className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-lg transition-colors text-base border border-white/30 font-cinzel"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={handleExecuteFunction}
+                        disabled={functionInputs.some(
+                          (input: any) => !inputValues[input.name]?.trim()
+                        )}
+                        className="flex-[2] text-white font-bold py-3 px-6 rounded-lg transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:scale-105 transform shadow-xl border-2 border-white/30 backdrop-blur-sm font-cinzel"
+                        style={{
+                          backgroundColor: functionInputs.some(
+                            (input: any) => !inputValues[input.name]?.trim()
+                          )
+                            ? "#666"
+                            : config.buttonColor || "#f97316",
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                          boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
+                        }}
+                      >
+                        Execute {config.functionName}
+                      </button>
                     </div>
                   </div>
-
-                  {/* Verification Button integrated into frame */}
-                  <div className="mt-8">
-                    <VerifyButton
-                      partnerId={partnerId}
-                      verifierDid={
-                        process.env.NEXT_PUBLIC_VERIFIER_DID ||
-                        "did:example:verifier123"
-                      }
-                      apiKey={
-                        process.env.NEXT_PUBLIC_VERIFIER_API_KEY ||
-                        "your-verifier-api-key"
-                      }
-                      programId={
-                        config.credentialId ||
-                        process.env.NEXT_PUBLIC_PROGRAM_ID ||
-                        "c21hg030taxui0091199Ic"
-                      }
-                      redirectUrlForIssuer={
-                        process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
-                        "http://localhost:3000/issue"
-                      }
-                      onVerificationComplete={handleVerificationComplete}
-                      onError={handleVerificationError}
-                      text={config.buttonText}
-                      className={`px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-105 shadow-lg text-white ${
-                        config.buttonColor
-                          ? ""
-                          : "bg-orange-500 hover:bg-orange-600"
-                      }`}
-                      style={
-                        config.buttonColor
-                          ? { backgroundColor: config.buttonColor }
-                          : {}
-                      }
-                    />
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -222,7 +387,9 @@ export default function DonatePage({ configId }: { configId: string }) {
         {showAbi && verificationResults && (
           <div className="max-w-2xl mx-auto">
             <div className="p-6 bg-white text-black rounded-lg">
-              <h3 className="text-lg font-semibold mb-4">ABI Section</h3>
+              <h3 className="text-lg font-semibold mb-4 font-cinzel">
+                ABI Section
+              </h3>
               <div className="space-y-2">
                 <p>
                   <strong>Status:</strong> {verificationResults.status}

@@ -142,10 +142,16 @@ export function FramePreview({ config }: FramePreviewProps) {
         </div>
 
         {/* Frame Content */}
-        <div className="mx-4 mb-4">
+        <div className="mx-4 mb-4 flex justify-center">
           <div
-            className="rounded-xl overflow-hidden border border-white/[0.08] min-h-[400px] relative"
-            style={{ backgroundColor: config.backgroundColor }}
+            className="rounded-xl overflow-hidden border border-white/[0.08] relative"
+            style={{
+              backgroundColor: config.backgroundColor,
+              width: "456px",
+              height: "456px",
+              maxWidth: "calc(100vw - 2rem)",
+              aspectRatio: "1/1",
+            }}
           >
             {/* Blurred background layer for images that don't fit */}
             {config.backgroundImage && (
@@ -181,14 +187,14 @@ export function FramePreview({ config }: FramePreviewProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
             </div>
 
-            <div className="relative z-10 p-8 h-full flex flex-col">
+            <div className="relative z-10 p-6 h-full flex flex-col">
               {/* Top Section: Logo positioned top right (only if provided) */}
-              <div className="flex justify-end mb-6">
+              <div className="flex justify-end mb-4">
                 {config.logo && (
                   <img
                     src={config.logo}
                     alt="Logo"
-                    className="h-20 w-20 object-cover rounded-full border-3 border-white/40 shadow-lg"
+                    className="h-16 w-16 object-cover rounded-full border-2 border-white/40 shadow-lg"
                   />
                 )}
               </div>
@@ -196,10 +202,10 @@ export function FramePreview({ config }: FramePreviewProps) {
               {/* Main Content Area */}
               <div className="flex-1 flex flex-col justify-between">
                 {/* Left Side Content over overlay */}
-                <div className="max-w-md">
+                <div className="max-w-xs">
                   {/* Title */}
                   <h3
-                    className="text-white font-bold text-3xl mb-4 leading-tight"
+                    className="text-white font-bold text-2xl mb-3 leading-tight"
                     style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.9)" }}
                   >
                     {config.title || "Frame Title"}
@@ -207,14 +213,14 @@ export function FramePreview({ config }: FramePreviewProps) {
 
                   {/* Description */}
                   <p
-                    className="text-white/95 text-lg mb-6 leading-relaxed font-medium"
+                    className="text-white/95 text-base mb-4 leading-relaxed font-medium"
                     style={{ textShadow: "1px 1px 4px rgba(0,0,0,0.8)" }}
                   >
                     {config.description || "Frame description"}
                   </p>
 
                   {/* Verification Info */}
-                  <div className="mb-6">
+                  <div className="mb-4">
                     <div className="flex items-center space-x-2 mb-2">
                       <div className="w-3 h-3 bg-blue-400 rounded-full shadow-sm"></div>
                       <span
@@ -238,7 +244,7 @@ export function FramePreview({ config }: FramePreviewProps) {
                   <div className="flex justify-start">
                     <button
                       onClick={handleButtonClick}
-                      className="text-white font-bold py-4 px-8 rounded-xl transition-all text-lg hover:opacity-90 hover:scale-105 transform shadow-2xl border-2 border-white/30 backdrop-blur-sm"
+                      className="text-white font-bold py-3 px-6 rounded-lg transition-all text-base hover:opacity-90 hover:scale-105 transform shadow-2xl border-2 border-white/30 backdrop-blur-sm"
                       style={{
                         backgroundColor: config.buttonColor,
                         textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
@@ -258,14 +264,14 @@ export function FramePreview({ config }: FramePreviewProps) {
 
                     {/* Error Display */}
                     {error && (
-                      <div className="absolute bottom-4 left-8 right-8 p-3 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded text-red-200 text-sm">
+                      <div className="absolute bottom-4 left-6 right-6 p-2 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded text-red-200 text-xs">
                         {error}
                       </div>
                     )}
                   </div>
                 ) : (
                   // Function Inputs Section - overlay style
-                  <div className="bg-black/60 backdrop-blur-md border border-white/20 rounded-xl p-6 shadow-2xl">
+                  <div className="bg-black/60 backdrop-blur-md border border-white/20 rounded-xl p-4 shadow-2xl">
                     <div className="mb-4">
                       <h4
                         className="text-white font-semibold text-lg mb-2"
@@ -276,7 +282,7 @@ export function FramePreview({ config }: FramePreviewProps) {
                     </div>
 
                     {/* Function Inputs */}
-                    <div className="space-y-4 mb-6">
+                    <div className="space-y-3 mb-4">
                       {functionInputs.map((input, index) => (
                         <div key={index}>
                           <label className="block text-white/90 text-sm mb-2 font-medium">

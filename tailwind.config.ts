@@ -29,6 +29,7 @@ const config: Config = {
           "Roboto",
           "sans-serif",
         ],
+        cinzel: ["var(--font-cinzel)", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",

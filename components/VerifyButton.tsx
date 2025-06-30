@@ -70,7 +70,7 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
     "did:example:verifier123",
   apiKey = process.env.NEXT_PUBLIC_VERIFIER_API_KEY || "your-verifier-api-key",
   programId = process.env.NEXT_PUBLIC_PROGRAM_ID || "c21hg030taxui0091199Ic",
-  redirectUrlForIssuer = "https://moink.crevn.xyz/issue",
+  redirectUrlForIssuer = "https://fastest-salary-seed-headlines.trycloudflare.com/issue",
   onVerificationComplete,
   onError,
   className = "",
