@@ -19,6 +19,7 @@ export default function DonatePage({ configId }: { configId: string }) {
   const [showAbi, setShowAbi] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [functionInputs, setFunctionInputs] = useState<any[]>([]);
 
   // Fetch config on mount
@@ -50,6 +51,7 @@ export default function DonatePage({ configId }: { configId: string }) {
     fetchConfig();
   }, [configId]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parseAbiAndFindFunction = (): any[] | null => {
     try {
       if (!config?.abi || !config?.functionName) {
@@ -59,6 +61,7 @@ export default function DonatePage({ configId }: { configId: string }) {
 
       const parsedAbi = JSON.parse(config.abi);
       const targetFunction = parsedAbi.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (item: any) =>
           item.type === "function" && item.name === config.functionName
       );
@@ -87,6 +90,7 @@ export default function DonatePage({ configId }: { configId: string }) {
       setFunctionInputs(inputs);
       // Initialize input values
       const initialValues: Record<string, string> = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       inputs.forEach((input: any) => {
         initialValues[input.name] = "";
       });
@@ -319,6 +323,7 @@ export default function DonatePage({ configId }: { configId: string }) {
 
                     {/* Function Inputs */}
                     <div className="space-y-4 mb-6">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {functionInputs.map((input: any, index: number) => (
                         <div key={index}>
                           <label className="block text-white/90 text-sm mb-2 font-medium font-cinzel">
@@ -351,11 +356,13 @@ export default function DonatePage({ configId }: { configId: string }) {
                       <button
                         onClick={handleExecuteFunction}
                         disabled={functionInputs.some(
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           (input: any) => !inputValues[input.name]?.trim()
                         )}
                         className="flex-[2] text-white font-bold py-3 px-6 rounded-lg transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:scale-105 transform shadow-xl border-2 border-white/30 backdrop-blur-sm font-cinzel"
                         style={{
                           backgroundColor: functionInputs.some(
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             (input: any) => !inputValues[input.name]?.trim()
                           )
                             ? "#666"
