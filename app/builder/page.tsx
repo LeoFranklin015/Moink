@@ -16,8 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAppContext } from "@/contexts/AppContext";
 import { LoginButton } from "@/components/common/LoginButton";
-import { createWalletClient, custom, parseEther, parseAbi } from "viem";
-import { baseSepolia } from "viem/chains";
+import { createWalletClient, custom, parseEther } from "viem";
 import { mocaTestnet } from "@/utils/constants";
 import {
   PAYMENT_GATEWAY_CONTRACT_ADDRESS,
@@ -244,6 +243,7 @@ export default function FrameBuilder() {
   const handleSaveClick = () => {
     // Open payment modal when save is clicked
     setIsPaymentModalOpen(true);
+    console.log(paymentSuccess);
   };
 
   const handlePaymentAndSave = async () => {
