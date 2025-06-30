@@ -6,9 +6,11 @@ import { useState, useEffect } from "react";
 import type { VerificationResults } from "@mocanetwork/air-credential-sdk";
 import type { FrameConfig } from "@/app/builder/page";
 import { LoginButton } from "@/components/common/LoginButton";
+import { createWalletClient, custom, parseEther } from "viem";
+import { mocaTestnet } from "@/utils/constants";
 
 export default function DonatePage({ configId }: { configId: string }) {
-  const { isLoggedIn, partnerId } = useAppContext();
+  const { airService, isLoggedIn, partnerId } = useAppContext();
 
   const [config, setConfig] = useState<FrameConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,9 @@ export default function DonatePage({ configId }: { configId: string }) {
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [functionInputs, setFunctionInputs] = useState<any[]>([]);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionSuccess, setExecutionSuccess] = useState(false);
+  const [executionError, setExecutionError] = useState<string | null>(null);
 
   // Fetch config on mount
   useEffect(() => {
@@ -118,13 +123,109 @@ export default function DonatePage({ configId }: { configId: string }) {
     setShowInputs(false);
     setShowAbi(false);
     setErrorMessage(null);
+    setExecutionError(null);
+    setExecutionSuccess(false);
   };
 
-  const handleExecuteFunction = () => {
-    console.log("Executing function with values:", inputValues);
-    // Here you would typically call the smart contract function
-    setShowInputs(false);
-    setShowAbi(true);
+  const handleExecuteFunction = async () => {
+    if (!airService || !isLoggedIn || !config) {
+      setExecutionError(
+        "Please ensure you are logged in and have a valid configuration"
+      );
+      return;
+    }
+
+    setIsExecuting(true);
+    setExecutionError(null);
+    setExecutionSuccess(false);
+
+    try {
+      console.log("Executing function with values:", inputValues);
+
+      // Parse the ABI to get the function details
+      const parsedAbi = JSON.parse(config.abi);
+      const targetFunction = parsedAbi.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (item: any) =>
+          item.type === "function" && item.name === config.functionName
+      );
+
+      if (!targetFunction) {
+        throw new Error(`Function "${config.functionName}" not found in ABI`);
+      }
+
+      // Prepare arguments array in the correct order
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const args: any[] = [];
+      if (targetFunction.inputs && targetFunction.inputs.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        targetFunction.inputs.forEach((input: any) => {
+          let value = inputValues[input.name];
+
+          // Convert values based on type
+          if (input.type.includes("uint") || input.type.includes("int")) {
+            value = value || "0";
+            args.push(BigInt(value));
+          } else if (input.type.includes("bool")) {
+            args.push(value.toLowerCase() === "true");
+          } else if (input.type.includes("address")) {
+            if (!value.startsWith("0x") || value.length !== 42) {
+              throw new Error(`Invalid address format for ${input.name}`);
+            }
+            args.push(value as `0x${string}`);
+          } else {
+            // string or bytes
+            args.push(value);
+          }
+        });
+      }
+
+      // Get the wallet client and make the contract call
+      const airProvider = await airService.getProvider();
+      const walletClient = createWalletClient({
+        transport: custom(airProvider),
+        chain: mocaTestnet,
+      });
+
+      const [aaAccount] = await walletClient.getAddresses();
+
+      // Determine if the function is payable and needs ETH
+      const isPayable = targetFunction.stateMutability === "payable";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const contractCallParams: any = {
+        abi: parsedAbi,
+        address: config.contractAddress as `0x${string}`,
+        functionName: config.functionName,
+        account: aaAccount,
+      };
+
+      // Add args if the function has inputs
+      if (args.length > 0) {
+        contractCallParams.args = args;
+      }
+
+      // Add value if the function is payable (you might want to add a value input field in the UI)
+      if (isPayable) {
+        // For now, we'll use 0 ETH. You can extend this to include a value input field
+        contractCallParams.value = parseEther("0");
+      }
+
+      console.log("Making contract call with params:", contractCallParams);
+
+      const txHash = await walletClient.writeContract(contractCallParams);
+
+      console.log("Transaction successful! Hash:", txHash);
+      setExecutionSuccess(true);
+      setShowInputs(false);
+      setShowAbi(true);
+    } catch (error) {
+      console.error("Contract execution error:", error);
+      setExecutionError(
+        error instanceof Error ? error.message : "Contract execution failed"
+      );
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
   const getInputPlaceholder = (type: string) => {
@@ -345,33 +446,50 @@ export default function DonatePage({ configId }: { configId: string }) {
                       ))}
                     </div>
 
+                    {/* Execution Error Display */}
+                    {executionError && (
+                      <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                        <p className="text-red-300 text-sm">
+                          ❌ {executionError}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="flex space-x-3">
                       <button
                         onClick={handleBack}
-                        className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-lg transition-colors text-base border border-white/30 font-cinzel"
+                        disabled={isExecuting}
+                        className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-lg transition-colors text-base border border-white/30 font-cinzel disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Back
                       </button>
                       <button
                         onClick={handleExecuteFunction}
-                        disabled={functionInputs.some(
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          (input: any) => !inputValues[input.name]?.trim()
-                        )}
-                        className="flex-[2] text-white font-bold py-3 px-6 rounded-lg transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:scale-105 transform shadow-xl border-2 border-white/30 backdrop-blur-sm font-cinzel"
-                        style={{
-                          backgroundColor: functionInputs.some(
+                        disabled={
+                          isExecuting ||
+                          functionInputs.some(
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             (input: any) => !inputValues[input.name]?.trim()
                           )
-                            ? "#666"
-                            : config.buttonColor || "#f97316",
+                        }
+                        className="flex-[2] text-white font-bold py-3 px-6 rounded-lg transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:scale-105 transform shadow-xl border-2 border-white/30 backdrop-blur-sm font-cinzel"
+                        style={{
+                          backgroundColor:
+                            isExecuting ||
+                            functionInputs.some(
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              (input: any) => !inputValues[input.name]?.trim()
+                            )
+                              ? "#666"
+                              : config.buttonColor || "#f97316",
                           textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
                           boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
                         }}
                       >
-                        Execute {config.functionName}
+                        {isExecuting
+                          ? "Executing..."
+                          : `Execute ${config.functionName}`}
                       </button>
                     </div>
                   </div>
@@ -390,14 +508,17 @@ export default function DonatePage({ configId }: { configId: string }) {
           </div>
         )}
 
-        {/* ABI Section - Show after verification */}
+        {/* Results Section - Show after verification or execution */}
         {showAbi && verificationResults && (
           <div className="max-w-2xl mx-auto">
             <div className="p-6 bg-white text-black rounded-lg">
               <h3 className="text-lg font-semibold mb-4 font-cinzel">
-                ABI Section
+                Verification & Execution Results
               </h3>
-              <div className="space-y-2">
+
+              {/* Verification Results */}
+              <div className="space-y-2 mb-6">
+                <h4 className="font-medium text-lg">Verification Status</h4>
                 <p>
                   <strong>Status:</strong> {verificationResults.status}
                 </p>
@@ -416,15 +537,40 @@ export default function DonatePage({ configId }: { configId: string }) {
                     ).toLocaleString()}
                   </p>
                 )}
-                <details className="mt-4">
-                  <summary className="cursor-pointer font-medium">
-                    View Full Verification Results
-                  </summary>
-                  <pre className="mt-2 p-3 bg-gray-100 text-sm overflow-auto">
-                    {JSON.stringify(verificationResults, null, 2)}
-                  </pre>
-                </details>
               </div>
+
+              {/* Contract Execution Results */}
+              <div className="space-y-2 mb-6 border-t pt-4">
+                <h4 className="font-medium text-lg">Contract Execution</h4>
+                {executionSuccess ? (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700">
+                    <p>
+                      ✅ Contract function {config?.functionName} executed
+                      successfully!
+                    </p>
+                    <p className="text-sm mt-1">
+                      Transaction has been submitted to the blockchain.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-50 border rounded text-gray-700">
+                    <p>⏳ Contract execution pending...</p>
+                    <p className="text-sm">
+                      Fill in the function parameters and click execute.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Full Verification Results Details */}
+              <details className="mt-4">
+                <summary className="cursor-pointer font-medium">
+                  View Full Verification Results
+                </summary>
+                <pre className="mt-2 p-3 bg-gray-100 text-sm overflow-auto">
+                  {JSON.stringify(verificationResults, null, 2)}
+                </pre>
+              </details>
             </div>
           </div>
         )}
