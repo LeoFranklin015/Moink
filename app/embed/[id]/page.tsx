@@ -8,15 +8,43 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
 
+  // Fetch config to get dynamic metadata
+  let config = null;
+  try {
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NODE_ENV === "production"
+      ? "https://moink.crevn.xyz"
+      : "http://localhost:3000";
+
+    const response = await fetch(`${baseUrl}/api/configs?id=${id}`, {
+      cache: "no-store", // Ensure fresh data for metadata
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        config = data.config;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching config for metadata:", error);
+  }
+
+  // Use config values if available, otherwise fallback to defaults
+  const title = config?.title || "Promotions";
+  const description =
+    config?.description ||
+    "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.";
+  const logo = config?.backgroundImage || "/logo.png";
+
   return {
-    title: "Nami AI | Donations",
-    description:
-      "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.",
+    title,
+    description,
     openGraph: {
-      title: "Nami AI | Donations",
-      description:
-        "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.",
-      images: ["/logo.png"],
+      title,
+      description,
+      images: [logo],
     },
     other: {
       "twitter:player": `https://moink.crevn.xyz/embed/${id}`,
@@ -26,10 +54,11 @@ export async function generateMetadata({
     twitter: {
       card: "player",
       site: "https://x.com/NamiAIStarknet",
-      title: "Nami AI | Donations",
-      images: ["https://stark-nami-ai.vercel.app/logo.png"],
-      description:
-        "An autonomous agent that discovers global disasters, collect donations and keeps NGO's accountable.",
+      title,
+      images: [
+        logo.startsWith("http") ? logo : `https://moink.crevn.xyz${logo}`,
+      ],
+      description,
       players: [
         {
           playerUrl: `https://moink.crevn.xyz/embed/${id}`,
