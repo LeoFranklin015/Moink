@@ -13,18 +13,12 @@ import {
   type AirEventListener,
   type BUILD_ENV_TYPE,
 } from "@mocanetwork/airkit";
-import {
-  getEnvironmentConfig,
-  type EnvironmentConfig,
-} from "../config/environment";
 
 // Get partner IDs from environment variables
 const ISSUER_PARTNER_ID =
-  process.env.NEXT_PUBLIC_ISSUER_PARTNER_ID ||
-  "ee8360b4-e5b9-43d9-8126-cdc6ff6b78a8";
+  process.env.NEXT_PUBLIC_ISSUER_PARTNER_ID || "";
 const VERIFIER_PARTNER_ID =
-  process.env.NEXT_PUBLIC_VERIFIER_PARTNER_ID ||
-  "ee8360b4-e5b9-43d9-8126-cdc6ff6b78a8";
+  process.env.NEXT_PUBLIC_VERIFIER_PARTNER_ID || "";
 const enableLogging = true;
 
 export const ENV_OPTIONS = [
@@ -41,8 +35,6 @@ interface AppContextType {
   userAddress: string | null;
   currentEnv: BUILD_ENV_TYPE;
   partnerId: string;
-  environmentConfig: EnvironmentConfig;
-
   // Actions
   setCurrentEnv: (env: BUILD_ENV_TYPE) => void;
   setPartnerId: (partnerId: string) => void;
@@ -78,9 +70,6 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   );
   const [partnerId, setPartnerId] = useState<string>(ISSUER_PARTNER_ID);
 
-  // Get environment config based on current environment
-  const environmentConfig = getEnvironmentConfig(currentEnv);
-
   // Function to get default partner ID based on current route
   const getDefaultPartnerId = (pathname: string): string => {
     if (pathname === "/issue") {
@@ -104,7 +93,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     try {
       const service = new AirService({ partnerId: partnerIdToUse });
       await service.init({
-        buildEnv: env as (typeof BUILD_ENV)[keyof typeof BUILD_ENV],
+        buildEnv: "sandbox",
+        credentialNetwork: "testnet",
         enableLogging,
         skipRehydration: false,
       });
@@ -222,7 +212,6 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     userAddress,
     currentEnv,
     partnerId,
-    environmentConfig,
     setCurrentEnv,
     setPartnerId,
     handleLogin,

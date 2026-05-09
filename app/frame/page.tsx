@@ -3,20 +3,25 @@
 import { VerifyButton } from "@/components/VerifyButton";
 import { useAppContext } from "@/contexts/AppContext";
 import { useState, useEffect } from "react";
-import type { VerificationResults } from "@mocanetwork/air-credential-sdk";
 import type { FrameConfig } from "@/app/builder/page";
+
+interface VerificationResultData {
+  status: string;
+  zkProofs?: Record<string, string>;
+  transactionHash?: string;
+}
 import { LoginButton } from "@/components/common/LoginButton";
 import { createWalletClient, custom, parseEther } from "viem";
 import { mocaTestnet } from "@/utils/constants";
 
 export default function DonatePage({ configId }: { configId: string }) {
-  const { airService, isLoggedIn, partnerId } = useAppContext();
+  const { airService, isLoggedIn } = useAppContext();
 
   const [config, setConfig] = useState<FrameConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [verificationResults, setVerificationResults] =
-    useState<VerificationResults | null>(null);
+    useState<VerificationResultData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showAbi, setShowAbi] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
@@ -86,7 +91,7 @@ export default function DonatePage({ configId }: { configId: string }) {
     }
   };
 
-  const handleVerificationComplete = (results: VerificationResults) => {
+  const handleVerificationComplete = (results: VerificationResultData) => {
     console.log("Verification completed:", results);
     setVerificationResults(results);
     setErrorMessage(null);
@@ -391,7 +396,7 @@ export default function DonatePage({ configId }: { configId: string }) {
 
                         {/* Explorer Link */}
                         <a
-                          href={`https://devnet-scan.mocachain.org/tx/${transactionHash}`}
+                          href={`https://testnet-scan.mocachain.org/tx/${transactionHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="block w-full bg-blue-600/20 hover:bg-blue-600/30 border border-blue-400/30 rounded-lg p-4 transition-all duration-200 hover:scale-105"
@@ -549,19 +554,10 @@ export default function DonatePage({ configId }: { configId: string }) {
                     {/* Left-aligned Verification Button */}
                     <div className="mt-4">
                       <VerifyButton
-                        partnerId={partnerId}
-                        verifierDid={
-                          process.env.NEXT_PUBLIC_VERIFIER_DID ||
-                          "did:example:verifier123"
-                        }
-                        apiKey={
-                          process.env.NEXT_PUBLIC_VERIFIER_API_KEY ||
-                          "your-verifier-api-key"
-                        }
                         programId={
                           config.credentialId ||
                           process.env.NEXT_PUBLIC_PROGRAM_ID ||
-                          "c21hg030taxui0091199Ic"
+                          ""
                         }
                         redirectUrlForIssuer={
                           process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
@@ -646,7 +642,7 @@ export default function DonatePage({ configId }: { configId: string }) {
                           {transactionHash}
                         </code>
                         <a
-                          href={`https://devnet-scan.mocachain.org/tx/${transactionHash}`}
+                          href={`https://testnet-scan.mocachain.org/tx/${transactionHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 text-xs underline flex-shrink-0"

@@ -9,32 +9,35 @@ export const isUrl = (url: string): boolean => {
   }
 };
 
-const keyType = "ES256";
+const ALG = "ES256";
 
 export const generateAuthToken = async ({
   privateKey,
+  partnerId,
+  scope,
+  kid,
   email,
   partnerUserId,
-  partnerId,
 }: {
   privateKey: string;
+  partnerId: string;
+  scope?: "issue" | "verify";
+  kid?: string;
   email?: string;
   partnerUserId?: string;
-  partnerId: string;
 }) => {
-  const payload = {
-    email: email || undefined,
-    partnerUserId: partnerUserId || undefined,
-    partnerId,
-  };
+  const payload: Record<string, unknown> = { partnerId };
+  if (scope) payload.scope = scope;
+  if (email) payload.email = email;
+  if (partnerUserId) payload.partnerUserId = partnerUserId;
 
-  if (!payload.email) delete payload.email;
-  if (!payload.partnerUserId) delete payload.partnerUserId;
+  const key = await importPKCS8(privateKey, ALG);
+  const header: { alg: string; kid?: string } = { alg: ALG };
+  if (kid) header.kid = kid;
 
-  const key = await importPKCS8(privateKey, keyType);
   return await new SignJWT(payload)
-    .setProtectedHeader({ alg: keyType })
-    .setExpirationTime("1h")
+    .setProtectedHeader(header)
+    .setExpirationTime("5m")
     .setIssuedAt()
     .setIssuer(partnerId)
     .sign(key);

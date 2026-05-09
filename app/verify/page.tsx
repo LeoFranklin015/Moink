@@ -1,171 +1,60 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import {
-  AirCredentialWidget,
-  type QueryRequest,
-  type VerificationResults,
-  type Language,
-} from "@mocanetwork/air-credential-sdk";
-import "@mocanetwork/air-credential-sdk/dist/style.css";
-import { BUILD_ENV } from "@mocanetwork/airkit";
+import { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
+import { getAuthToken } from "@/lib/airkit-auth";
 import Layout from "@/components/Layout";
 
-// Environment variables for configuration
-const LOCALE = process.env.NEXT_PUBLIC_LOCALE || "en";
-
-const getVerifierAuthToken = async (
-  verifierDid: string,
-  apiKey: string,
-  apiUrl: string
-): Promise<string | null> => {
-  try {
-    const response = await fetch(`${apiUrl}/verifier/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        accept: "*/*",
-        "X-Test": "true",
-      },
-      body: JSON.stringify({
-        verifierDid: verifierDid,
-        authToken: apiKey,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API call failed with status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.code === 80000000 && data.data && data.data.token) {
-      return data.data.token;
-    } else {
-      console.error(
-        "Failed to get verifier auth token from API:",
-        data.msg || "Unknown error"
-      );
-      return null;
-    }
-  } catch (error) {
-    console.error("Error fetching verifier auth token:", error);
-    return null;
-  }
-};
+interface VerificationResultData {
+  status: string;
+  zkProofs?: Record<string, string>;
+  transactionHash?: string;
+}
 
 const CredentialVerification = () => {
-  const { airService, isLoggedIn, currentEnv, partnerId, environmentConfig } =
-    useAppContext();
+  const { airService, isLoggedIn, partnerId } = useAppContext();
 
   const [isLoading, setIsLoading] = useState(false);
   const [verificationResult, setVerificationResult] =
-    useState<VerificationResults | null>(null);
+    useState<VerificationResultData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const widgetRef = useRef<AirCredentialWidget | null>(null);
 
-  // Configuration - these would typically come from environment variables or API
   const [config, setConfig] = useState({
-    apiKey: process.env.NEXT_PUBLIC_VERIFIER_API_KEY || "your-verifier-api-key",
-    verifierDid:
-      process.env.NEXT_PUBLIC_VERIFIER_DID || "did:example:verifier123",
-    programId: process.env.NEXT_PUBLIC_PROGRAM_ID || "c21hc030kb5iu0030224Qs",
+    programId: process.env.NEXT_PUBLIC_PROGRAM_ID || "",
     redirectUrlForIssuer:
       process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
       "http://localhost:3000/issue",
   });
 
-  console.log("AirService in CredentialVerification:", airService);
-
   const handleConfigChange = (field: string, value: string) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
   };
 
-  const generateWidget = async () => {
-    try {
-      // Step 1: Fetch the verifier auth token using the API key
-      const fetchedVerifierAuthToken = await getVerifierAuthToken(
-        config.verifierDid,
-        config.apiKey,
-        environmentConfig.apiUrl
-      );
-
-      if (!fetchedVerifierAuthToken) {
-        setError(
-          "Failed to fetch verifier authentication token. Please check your API Key."
-        );
-        setIsLoading(false);
-        return;
-      }
-
-      // Create the query request with the fetched token
-      const queryRequest: QueryRequest = {
-        process: "Verify",
-        verifierAuth: fetchedVerifierAuthToken,
-        programId: config.programId,
-      };
-
-      const rp = await airService
-        ?.goToPartner(environmentConfig.widgetUrl)
-        .catch((err) => {
-          console.error("Error getting URL with token:", err);
-        });
-
-      if (!rp?.urlWithToken) {
-        console.warn(
-          "Failed to get URL with token. Please check your partner ID."
-        );
-        setError("Failed to get URL with token. Please check your partner ID.");
-        setIsLoading(false);
-        return;
-      }
-      // Create and configure the widget with proper options
-      widgetRef.current = new AirCredentialWidget(queryRequest, partnerId, {
-        endpoint: rp?.urlWithToken,
-        airKitBuildEnv: currentEnv || BUILD_ENV.STAGING,
-        theme: "light", // currently only have light theme
-        locale: LOCALE as Language,
-        redirectUrlForIssuer: config.redirectUrlForIssuer || undefined,
-      });
-
-      // Set up event listeners
-      widgetRef.current.on(
-        "verifyCompleted",
-        (results: VerificationResults) => {
-          setVerificationResult(results);
-          setIsLoading(false);
-          console.log("Verification completed:", results);
-        }
-      );
-
-      widgetRef.current.on("close", () => {
-        setIsLoading(false);
-        console.log("Widget closed");
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create widget");
-      setIsLoading(false);
-    }
-  };
-
   const handleVerifyCredential = async () => {
+    if (!airService) {
+      setError("AirService is not initialized. Please wait.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setVerificationResult(null);
 
     try {
-      // Generate widget if not already created
-      if (!widgetRef.current) {
-        await generateWidget();
-      }
+      const jwt = await getAuthToken("verify");
 
-      // Start the widget
-      if (widgetRef.current) {
-        widgetRef.current.launch();
-      }
+      const result = await airService.verifyCredential({
+        authToken: jwt,
+        programId: config.programId,
+        redirectUrl: config.redirectUrlForIssuer || undefined,
+      });
+
+      console.log("Verification result:", result);
+      setVerificationResult(result.verificationResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Verification error:", err);
+      setError(err instanceof Error ? err.message : "Verification failed");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -173,10 +62,6 @@ const CredentialVerification = () => {
   const handleReset = () => {
     setVerificationResult(null);
     setError(null);
-    if (widgetRef.current) {
-      widgetRef.current.destroy();
-      widgetRef.current = null;
-    }
   };
 
   const getStatusColor = (status: string) => {
@@ -196,27 +81,6 @@ const CredentialVerification = () => {
         return "text-purple-800 bg-purple-50 border-purple-200";
       default:
         return "text-gray-800 bg-gray-50 border-gray-200";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Compliant":
-        return "✅";
-      case "Non-Compliant":
-        return "❌";
-      case "Pending":
-        return "⏳";
-      case "Revoking":
-        return "🔄";
-      case "Revoked":
-        return "🚫";
-      case "Expired":
-        return "⏰";
-      case "NotFound":
-        return "🔍";
-      default:
-        return "❓";
     }
   };
 
@@ -241,14 +105,6 @@ const CredentialVerification = () => {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (widgetRef.current) {
-        widgetRef.current.destroy();
-      }
-    };
-  }, []);
-
   return (
     <Layout>
       <div className="flex-1 p-2 sm:p-4 lg:p-8">
@@ -258,17 +114,15 @@ const CredentialVerification = () => {
               Credential Verification
             </h2>
             <p className="text-gray-600 text-sm sm:text-base">
-              Verify digital credentials using the AIR Credential SDK. Configure
-              the verification parameters below and start the widget to begin
-              the verification process.
+              Verify digital credentials using the AIR Kit SDK. Configure the
+              verification parameters below and verify credentials directly.
             </p>
           </div>
 
-          {/* Connection Status */}
           {!isLoggedIn && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
               <p className="text-yellow-800">
-                ⚠️ Please connect your wallet to use the verification feature.
+                Please connect your wallet to use the verification feature.
               </p>
             </div>
           )}
@@ -281,33 +135,6 @@ const CredentialVerification = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Verifier DID
-                </label>
-                <input
-                  type="text"
-                  value={config.verifierDid}
-                  onChange={(e) =>
-                    handleConfigChange("verifierDid", e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Your verifier DID"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Verifier API Key
-                </label>
-                <input
-                  type="text"
-                  value={config.apiKey}
-                  onChange={(e) => handleConfigChange("apiKey", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Your verifier API key"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Program ID
                 </label>
                 <input
@@ -317,7 +144,7 @@ const CredentialVerification = () => {
                     handleConfigChange("programId", e.target.value)
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="program-123"
+                  placeholder="Verification program ID"
                 />
               </div>
 
@@ -330,7 +157,6 @@ const CredentialVerification = () => {
                   value={partnerId}
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
-                  placeholder="Partner ID from Context"
                 />
               </div>
 
@@ -345,30 +171,9 @@ const CredentialVerification = () => {
                     handleConfigChange("redirectUrlForIssuer", e.target.value)
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="https://example.com/issue-credential"
+                  placeholder="https://example.com/issue"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Environment Info */}
-          <div className="mb-6 sm:mb-8 p-2 sm:p-4 bg-gray-50 border border-gray-200 rounded-md">
-            <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-1 sm:mb-2">
-              Environment Configuration:
-            </h4>
-            <div className="text-xs text-gray-700 space-y-1">
-              <p>
-                <strong>Widget URL:</strong> {environmentConfig.widgetUrl}
-              </p>
-              <p>
-                <strong>API URL:</strong> {environmentConfig.apiUrl}
-              </p>
-              <p>
-                <strong>Theme:</strong> light
-              </p>
-              <p>
-                <strong>Locale:</strong> {LOCALE}
-              </p>
             </div>
           </div>
 
@@ -395,16 +200,30 @@ const CredentialVerification = () => {
                       verificationResult.status
                     )}`}
                   >
-                    {getStatusIcon(verificationResult.status)}{" "}
                     {verificationResult.status}
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-600 mb-2">
                   {getStatusDescription(verificationResult.status)}
                 </p>
-                <pre className="text-xs text-gray-500 bg-gray-50 p-2 rounded overflow-auto">
-                  {JSON.stringify(verificationResult, null, 2)}
-                </pre>
+                {verificationResult.transactionHash && (
+                  <div className="mt-3 p-2 bg-green-50 rounded border border-green-200">
+                    <p className="text-xs text-green-600 mb-1">
+                      Transaction Hash:
+                    </p>
+                    <code className="text-xs font-mono text-green-800 break-all">
+                      {verificationResult.transactionHash}
+                    </code>
+                  </div>
+                )}
+                <details className="mt-4">
+                  <summary className="cursor-pointer font-medium text-sm">
+                    View Full Results
+                  </summary>
+                  <pre className="mt-2 p-3 bg-gray-100 text-sm overflow-auto">
+                    {JSON.stringify(verificationResult, null, 2)}
+                  </pre>
+                </details>
               </div>
             </div>
           )}
@@ -438,10 +257,10 @@ const CredentialVerification = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Launching Widget...
+                  Verifying...
                 </span>
               ) : (
-                "Start Credential Verification Widget"
+                "Verify Credential"
               )}
             </button>
 
@@ -461,16 +280,10 @@ const CredentialVerification = () => {
               Instructions:
             </h4>
             <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
-              <li>• Need to whitelist the cross partner domain in Airkit </li>
-              <li>• Configure the verifier API key and program ID</li>
-              <li>• Set the partner id</li>
-              <li>• Set the redirect URL for issuer if required</li>
-              <li>
-                • Click Start Credential Verification Widget to start the
-                process
-              </li>
-              <li>• The widget will handle the credential verification flow</li>
-              <li>• Review the verification results after completion</li>
+              <li>1. Connect your wallet using the login button</li>
+              <li>2. Ensure your domain is whitelisted in the AIRKit dashboard</li>
+              <li>3. Configure the program ID for your verification program</li>
+              <li>4. Click Verify Credential to verify directly via the SDK</li>
             </ul>
           </div>
         </div>

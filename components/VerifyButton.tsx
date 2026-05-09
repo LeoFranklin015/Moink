@@ -1,75 +1,28 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import {
-  AirCredentialWidget,
-  type QueryRequest,
-  type VerificationResults,
-  type Language,
-} from "@mocanetwork/air-credential-sdk";
-import "@mocanetwork/air-credential-sdk/dist/style.css";
-import { BUILD_ENV } from "@mocanetwork/airkit";
+import { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
+import { getAuthToken } from "@/lib/airkit-auth";
+
+interface VerificationResultData {
+  status: string;
+  zkProofs?: Record<string, string>;
+  transactionHash?: string;
+}
 
 interface VerifyButtonProps {
-  partnerId?: string; // Optional since we can use context partnerId
-  verifierDid?: string;
-  apiKey?: string;
+  partnerId?: string;
   programId?: string;
   redirectUrlForIssuer?: string;
-  onVerificationComplete?: (results: VerificationResults) => void;
+  onVerificationComplete?: (results: VerificationResultData) => void;
   onError?: (error: string) => void;
   className?: string;
-  text?: string; // Custom button text
-  style?: React.CSSProperties; // Custom button styles
+  text?: string;
+  style?: React.CSSProperties;
   children?: React.ReactNode;
 }
 
-const getVerifierAuthToken = async (
-  verifierDid: string,
-  apiKey: string,
-  apiUrl: string
-): Promise<string | null> => {
-  try {
-    const response = await fetch(`${apiUrl}/verifier/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        accept: "*/*",
-        "X-Test": "true",
-      },
-      body: JSON.stringify({
-        verifierDid: verifierDid,
-        authToken: apiKey,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API call failed with status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.code === 80000000 && data.data && data.data.token) {
-      return data.data.token;
-    } else {
-      console.error(
-        "Failed to get verifier auth token from API:",
-        data.msg || "Unknown error"
-      );
-      return null;
-    }
-  } catch (error) {
-    console.error("Error fetching verifier auth token:", error);
-    return null;
-  }
-};
-
 export const VerifyButton: React.FC<VerifyButtonProps> = ({
-  partnerId: propPartnerId,
-  verifierDid = process.env.NEXT_PUBLIC_VERIFIER_DID ||
-    "did:example:verifier123",
-  apiKey = process.env.NEXT_PUBLIC_VERIFIER_API_KEY || "your-verifier-api-key",
-  programId = process.env.NEXT_PUBLIC_PROGRAM_ID || "c21hg030taxui0091199Ic",
+  programId = process.env.NEXT_PUBLIC_PROGRAM_ID || "",
   redirectUrlForIssuer = "https://moink.crevn.xyz/issue",
   onVerificationComplete,
   onError,
@@ -78,164 +31,55 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
   style,
   children,
 }) => {
-  const {
-    airService,
-    isLoggedIn,
-    currentEnv,
-    partnerId: contextPartnerId,
-    environmentConfig,
-    isInitialized,
-  } = useAppContext();
+  const { airService, isLoggedIn, isInitialized } = useAppContext();
 
-  // Use prop partnerId if provided, otherwise use context partnerId
-  const activePartnerId = propPartnerId || contextPartnerId;
-
-  console.log("VerifyButton props:", {
-    partnerId: activePartnerId,
-    verifierDid,
-    apiKey,
-    programId,
-    redirectUrlForIssuer,
-    onVerificationComplete,
-  });
-
-  // Widget state management
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const widgetRef = useRef<AirCredentialWidget | null>(null);
 
-  // Generate and launch widget
-  const generateWidget = async () => {
+  const handleVerifyClick = async () => {
     if (!airService) {
-      const errorMsg =
-        "AirService is not initialized. Please wait for initialization to complete.";
+      const errorMsg = "AirService is not initialized. Please wait.";
       setError(errorMsg);
       onError?.(errorMsg);
-      setIsLoading(false);
       return;
     }
 
     if (!isLoggedIn) {
-      const errorMsg = "Please login to AirService first.";
+      const errorMsg = "Please login first.";
       setError(errorMsg);
       onError?.(errorMsg);
-      setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
+    setError(null);
+
     try {
-      console.log("Starting widget generation...");
+      const jwt = await getAuthToken("verify");
 
-      // Step 1: Fetch the verifier auth token using the API key
-      const fetchedVerifierAuthToken = await getVerifierAuthToken(
-        verifierDid,
-        apiKey,
-        environmentConfig.apiUrl
-      );
-
-      if (!fetchedVerifierAuthToken) {
-        const errorMsg =
-          "Failed to fetch verifier authentication token. Please check your API Key.";
-        setError(errorMsg);
-        onError?.(errorMsg);
-        setIsLoading(false);
-        return;
-      }
-
-      // Create the query request with the fetched token
-      const queryRequest: QueryRequest = {
-        process: "Verify",
-        verifierAuth: fetchedVerifierAuthToken,
-        programId: programId,
-      };
-
-      console.log("Getting URL with token from AirService...");
-      const rp = await airService
-        .goToPartner(environmentConfig.widgetUrl)
-        .catch((err) => {
-          console.error("Error getting URL with token:", err);
-          throw err;
-        });
-
-      if (!rp?.urlWithToken) {
-        const errorMsg =
-          "Failed to get URL with token. Please check your partner ID.";
-        console.warn(errorMsg);
-        setError(errorMsg);
-        onError?.(errorMsg);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("Creating widget with URL:", rp.urlWithToken);
-
-      // Create and configure the widget with proper options
-      widgetRef.current = new AirCredentialWidget(
-        queryRequest,
-        activePartnerId,
-        {
-          endpoint: rp.urlWithToken,
-          airKitBuildEnv: currentEnv || BUILD_ENV.SANDBOX,
-          theme: "light",
-          locale: "en" as Language,
-          redirectUrlForIssuer: redirectUrlForIssuer || undefined,
-        }
-      );
-
-      // Set up event listeners
-      widgetRef.current.on(
-        "verifyCompleted",
-        (results: VerificationResults) => {
-          setIsLoading(false);
-          console.log("Verification completed:", results);
-          onVerificationComplete?.(results);
-          setError(null);
-        }
-      );
-
-      widgetRef.current.on("close", () => {
-        setIsLoading(false);
-        console.log("Widget closed");
+      const result = await airService.verifyCredential({
+        authToken: jwt,
+        programId,
+        redirectUrl: redirectUrlForIssuer || undefined,
       });
 
-      console.log("Widget created successfully");
+      console.log("Verification result:", result);
+      setError(null);
+      onVerificationComplete?.(result.verificationResult);
     } catch (err) {
-      const errorMsg = `Widget generation error: ${
+      const errorMsg = `Verification error: ${
         err instanceof Error ? err.message : "Unknown error"
       }`;
       console.error(errorMsg);
       setError(errorMsg);
       onError?.(errorMsg);
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyClick = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Generate widget if not already created
-      if (!widgetRef.current) {
-        await generateWidget();
-      }
-
-      // Start the widget
-      if (widgetRef.current) {
-        widgetRef.current.launch();
-      }
-    } catch (err) {
-      const errorMsg = `Verification error: ${
-        err instanceof Error ? err.message : "Unknown error"
-      }`;
-      setError(errorMsg);
-      onError?.(errorMsg);
+    } finally {
       setIsLoading(false);
     }
   };
 
   const getButtonText = () => {
-    if (isLoading) return "Launching Verification...";
+    if (isLoading) return "Verifying...";
     if (!isInitialized) return "Initializing...";
     if (!isLoggedIn) return "Login Required";
     if (children) return children;
@@ -246,15 +90,6 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
   const isDisabled = () => {
     return isLoading || !isInitialized || !isLoggedIn;
   };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (widgetRef.current) {
-        widgetRef.current.destroy();
-      }
-    };
-  }, []);
 
   return (
     <div className="verify-button-container">

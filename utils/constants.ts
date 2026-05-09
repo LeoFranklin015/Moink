@@ -5,7 +5,7 @@ import { BUILD_ENV as AIRKIT_BUILD_ENV } from "@mocanetwork/airkit";
 export const mocaTestnet: Chain & {
   contracts: { multicall3: { address: `0x${string}`; blockCreated: number } };
 } = defineChain({
-  id: 5151,
+  id: 222888,
   name: "Moca Testnet",
   nativeCurrency: {
     decimals: 18,
@@ -14,17 +14,17 @@ export const mocaTestnet: Chain & {
   },
   rpcUrls: {
     default: {
-      http: ["https://devnet-rpc.mocachain.org"],
-      webSocket: ["wss://devnet-rpc.mocachain.org"],
+      http: ["https://testnet-rpc.mocachain.org"],
+      webSocket: ["wss://testnet-rpc.mocachain.org"],
     },
   },
   blockExplorers: {
-    default: { name: "Blockscout", url: "https://devnet-scan.mocachain.org" },
+    default: { name: "Blockscout", url: "https://testnet-scan.mocachain.org" },
   },
   contracts: {
     multicall3: {
       address: "0xcA11bde05977b3631167028862bE2a173976CA11",
-      blockCreated: 3837540,
+      blockCreated: 0,
     },
   },
 } as const);

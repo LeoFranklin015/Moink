@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.moca.network)",
+      "Bash(npm install @mocanetwork/airkit@latest @mocanetwork/airkit-connector@latest @mocanetwork/air-credential-sdk@latest)",
+      "Bash(npm run build)",
+      "Bash(openssl ecparam -genkey -name prime256v1 -noout)",
+      "Bash(openssl ec)",
+      "Bash(openssl pkcs8 -topk8 -nocrypt)",
+      "Bash(npm uninstall @mocanetwork/air-credential-sdk)",
+      "WebFetch(domain:6455-2401-4900-88dc-ab8d-854d-768b-bf2a-4a15.ngrok-free.app)",
+      "Bash(curl -s -H \"ngrok-skip-browser-warning: true\" \"https://6455-2401-4900-88dc-ab8d-854d-768b-bf2a-4a15.ngrok-free.app/api/.well-known/jwks\")",
+      "Bash(curl -s -H \"ngrok-skip-browser-warning: true\" \"https://6455-2401-4900-88dc-ab8d-854d-768b-bf2a-4a15.ngrok-free.app/api/auth/jwt?scope=issue\")",
+      "Bash(curl -s \"http://localhost:3000/api/.well-known/jwks\")",
+      "Bash(node -e \":*)",
+      "Bash(node -e ':*)",
+      "Bash(curl -s \"http://localhost:3000/api/auth/jwt?scope=issue\")",
+      "Bash(curl -sv \"http://localhost:3000/api/auth/jwt?scope=issue\")",
+      "Bash(node -e 'const j = require\\(\"\"jose\"\"\\); console.log\\(typeof j.importPKCS8, typeof j.exportJWK, typeof j.SignJWT\\)')",
+      "Bash(curl -s \"http://localhost:3000/api/db/init\")",
+      "Bash(lsof -i :3000)",
+      "Bash(curl -s \"http://localhost:3000/\")",
+      "Bash(kill 56360)",
+      "Bash(grep -r \"import.*@mocanetwork\" /Users/untitled_folder/blockchian/moink/Moink --include=\"*.ts\" --include=\"*.tsx\" ! -path \"*/node_modules/*\")",
+      "Bash(grep -r \"import.*AirService\\\\|from.*@mocanetwork\" /Users/untitled_folder/blockchian/moink/Moink --include=\"*.ts\" --include=\"*.tsx\" ! -path \"*/node_modules/*\")",
+      "Bash(grep -r \"widgetUrl\\\\|apiUrl\\\\|credential-widget\" /Users/untitled_folder/blockchian/moink/Moink --include=\"*.ts\" --include=\"*.tsx\" ! -path \"*/node_modules/*\" ! -path \"*/.next/*\")",
+      "Bash(lsof -ti :3000)",
+      "Bash(xargs kill -9)",
+      "Bash(curl -s \"https://voters-prefix-freedom-treaty.trycloudflare.com/api/.well-known/jwks\")",
+      "Bash(curl -s \"https://voters-prefix-freedom-treaty.trycloudflare.com/api/auth/jwt?scope=issue\")"
+    ]
+  }
+}

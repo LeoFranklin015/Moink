@@ -10,9 +10,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
-    "@mocanetwork/air-credential-sdk": "^0.0.7-beta.1",
-    "@mocanetwork/airkit": "^1.4.2",
-    "@mocanetwork/airkit-connector": "^1.4.2",
+    "@mocanetwork/airkit": "^1.8.1-beta.0",
+    "@mocanetwork/airkit-connector": "^1.8.1-beta.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
