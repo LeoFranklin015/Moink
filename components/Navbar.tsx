@@ -41,10 +41,19 @@ export function Navbar({ floating = true }: { floating?: boolean }) {
       >
         <Link href="/" className="flex items-center gap-2.5 group">
           <span
-            className="inline-flex items-center justify-center w-7 h-7 rounded-lg transition-transform group-hover:scale-105"
+            className="relative inline-flex items-center justify-center w-7 h-7 rounded-lg transition-transform group-hover:scale-105 overflow-hidden"
             style={{ background: "linear-gradient(135deg, rgb(var(--mint)) 0%, rgb(var(--mint-bright)) 100%)" }}
           >
-            <span className="text-[#0f0f0f] text-base font-bold">M</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              {/* identityX mark — interlocking X with a vertical stroke (i) */}
+              <path
+                d="M3.5 3.5l9 9M12.5 3.5l-9 9"
+                stroke="#0b0b0c"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <circle cx="8" cy="8" r="1.4" fill="#0b0b0c" />
+            </svg>
           </span>
           <span className="text-base font-semibold tracking-tight">
             identity<span className="text-mint">X</span>

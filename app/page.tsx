@@ -55,45 +55,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Showcase */}
-      <section className="px-4 lg:px-6 pb-12 max-w-[1400px] mx-auto">
-        <div className="card-mint min-h-[480px] p-8 lg:p-14 fade-up flex flex-col justify-between relative overflow-hidden">
-          <div className="card-mint-inner inline-flex max-w-fit px-4 py-2">
-            <span className="text-[12px] font-medium text-[#0f0f0f]">Composable verification frames</span>
-          </div>
-
-          <div className="relative mt-8 lg:mt-12 flex justify-end">
-            <div className="card bg-[#0f0f0f] border-edge-strong p-6 lg:p-8 w-full max-w-md rotate-[2deg] shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
-              <div className="flex items-center gap-2 mb-5">
-                <span className="w-7 h-7 rounded-full bg-mint" />
-                <span className="text-[11px] uppercase tracking-[0.08em] text-fg-muted font-medium">moca · age</span>
-              </div>
-              <div className="text-2xl font-semibold tracking-tight text-fg leading-tight mb-3">
-                Verify you're not 17<br />to claim your reward.
-              </div>
-              <div className="flex items-center gap-2 text-[12px] text-fg-muted mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-mint" />
-                age must not be 17
-              </div>
-              <button className="btn-mint w-full justify-center pointer-events-none">
-                Verify &amp; claim
-                <ArrowRight />
-              </button>
-            </div>
-          </div>
-
-          <div className="absolute bottom-0 left-0 right-0 px-8 lg:px-14 pb-7 text-[#0f0f0f]/70 text-sm">
-            <div className="flex items-end justify-between">
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.12em] text-[#0f0f0f]/60 mb-1">Embed</div>
-                <div className="font-medium text-[#0f0f0f] mono">identityx.app/embed/[id]</div>
-              </div>
-              <div className="text-[#0f0f0f]/60 text-xs">720 × 720 · twitter:player</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* From Awareness to Action — three step */}
       <section id="how" className="px-4 lg:px-6 py-20 max-w-[1400px] mx-auto">
         <div className="text-center mb-14 fade-up">
