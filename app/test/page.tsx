@@ -9,8 +9,8 @@ import { Navbar } from "@/components/Navbar";
 const ISSUER_DID = process.env.NEXT_PUBLIC_ISSUER_DID!;
 const CREDENTIAL_ID = process.env.NEXT_PUBLIC_CREDENTIAL_ID!;
 
-// TODO: replace with the real demo tweet URL when ready.
-const DEMO_TWEET_URL = "#tweet";
+// Set NEXT_PUBLIC_DEMO_TWEET_URL in .env.local to point at the real tweet.
+const DEMO_TWEET_URL = process.env.NEXT_PUBLIC_DEMO_TWEET_URL || "#tweet";
 
 type Phase = "need-login" | "ready" | "issuing" | "issued" | "error";
 
