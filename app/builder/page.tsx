@@ -1,21 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, Save, Copy, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { FramePreview } from "@/components/FramePreview";
-import { ConfigPanel } from "@/components/ConfigPanel";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAirkit } from "@/components/AirkitProvider";
 import { LoginButton } from "@/components/common/LoginButton";
+import { ConfigPanel } from "@/components/ConfigPanel";
+import { FramePreview, type FrameStep } from "@/components/FramePreview";
 
 export interface FrameConfig {
   logo: string;
@@ -31,462 +28,322 @@ export interface FrameConfig {
   contractAddress: string;
   abi: string;
   functionName: string;
+  actionButtonText: string;
 }
+
+const DEFAULT_CONFIG: FrameConfig = {
+  logo: "",
+  backgroundColor: "#0f0f10",
+  backgroundImage: "",
+  title: "EXCLUSIVE ACCESS",
+  description:
+    "Verify your credential to unlock the next move. One signature, zero data shared.",
+  credentialId: process.env.NEXT_PUBLIC_PROGRAM_ID || "",
+  verificationRequirement: "Your age must not be 17",
+  buttonText: "VERIFY & CLAIM",
+  buttonColor: "#a8d9af",
+  buttonHoverColor: "#5fcf80",
+  contractAddress: "",
+  abi: "[]",
+  functionName: "",
+  actionButtonText: "",
+};
 
 export default function FrameBuilder() {
   const { isLoggedIn } = useAirkit();
-
-  const [config, setConfig] = useState<FrameConfig>({
-    logo: "",
-    backgroundColor: "#000000",
-    backgroundImage: "",
-    title: "EXCLUSIVE ACCESS",
-    description:
-      "Join the elite community and unlock premium features. Verify your identity to access exclusive content and special privileges.",
-    credentialId: "exclusive-access-v1",
-    verificationRequirement: "Your age is 18 or above",
-    buttonText: "GET EXCLUSIVE ACCESS",
-    buttonColor: "#ff6b35",
-    buttonHoverColor: "#e55a2b",
-    contractAddress: "0x1234567890123456789012345678901234567890",
-    abi: JSON.stringify(
-      [
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "owner",
-              type: "address",
-            },
-          ],
-          stateMutability: "nonpayable",
-          type: "constructor",
-        },
-        {
-          anonymous: false,
-          inputs: [
-            {
-              indexed: true,
-              internalType: "address",
-              name: "user",
-              type: "address",
-            },
-            {
-              indexed: false,
-              internalType: "uint8",
-              name: "kycLevel",
-              type: "uint8",
-            },
-            {
-              indexed: false,
-              internalType: "uint256",
-              name: "timestamp",
-              type: "uint256",
-            },
-          ],
-          name: "KYCVerified",
-          type: "event",
-        },
-        {
-          anonymous: false,
-          inputs: [
-            {
-              indexed: true,
-              internalType: "address",
-              name: "user",
-              type: "address",
-            },
-          ],
-          name: "KYCRevoked",
-          type: "event",
-        },
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "_user",
-              type: "address",
-            },
-          ],
-          name: "getKYCStatus",
-          outputs: [
-            {
-              internalType: "bool",
-              name: "isVerified",
-              type: "bool",
-            },
-            {
-              internalType: "uint8",
-              name: "kycLevel",
-              type: "uint8",
-            },
-            {
-              internalType: "uint256",
-              name: "verificationDate",
-              type: "uint256",
-            },
-          ],
-          stateMutability: "view",
-          type: "function",
-        },
-        {
-          inputs: [],
-          name: "owner",
-          outputs: [
-            {
-              internalType: "address",
-              name: "",
-              type: "address",
-            },
-          ],
-          stateMutability: "view",
-          type: "function",
-        },
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "_user",
-              type: "address",
-            },
-          ],
-          name: "revokeKYC",
-          outputs: [],
-          stateMutability: "nonpayable",
-          type: "function",
-        },
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "_user",
-              type: "address",
-            },
-            {
-              internalType: "uint8",
-              name: "_kycLevel",
-              type: "uint8",
-            },
-            {
-              internalType: "string",
-              name: "_documentHash",
-              type: "string",
-            },
-          ],
-          name: "verifyKYC",
-          outputs: [],
-          stateMutability: "nonpayable",
-          type: "function",
-        },
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "",
-              type: "address",
-            },
-          ],
-          name: "kycData",
-          outputs: [
-            {
-              internalType: "bool",
-              name: "isVerified",
-              type: "bool",
-            },
-            {
-              internalType: "uint8",
-              name: "kycLevel",
-              type: "uint8",
-            },
-            {
-              internalType: "uint256",
-              name: "verificationDate",
-              type: "uint256",
-            },
-            {
-              internalType: "string",
-              name: "documentHash",
-              type: "string",
-            },
-          ],
-          stateMutability: "view",
-          type: "function",
-        },
-      ],
-      null,
-      2
-    ),
-    functionName: "verifyKYC",
-  });
+  const [config, setConfig] = useState<FrameConfig>(DEFAULT_CONFIG);
 
   const [savedConfigId, setSavedConfigId] = useState<string | null>(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
+  const [previewStep, setPreviewStep] = useState<FrameStep>("verify");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") setOrigin(window.location.origin);
+  }, []);
 
   const updateConfig = (key: keyof FrameConfig, value: string) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
-    // Reset saved state when config changes
-    if (savedConfigId) {
-      setSavedConfigId(null);
-    }
+    setConfig((p) => ({ ...p, [key]: value }));
+    if (savedConfigId) setSavedConfigId(null);
   };
 
-  const handleSaveClick = () => {
-    // Open payment modal when save is clicked
-    setIsPaymentModalOpen(true);
-    console.log(paymentSuccess);
-  };
-
-  const handlePaymentAndSave = async () => {
+  const onSave = async () => {
     if (!isLoggedIn) {
-      setPaymentError("Please login first");
+      setSaveError("Please connect your wallet first.");
       return;
     }
-
     setIsProcessing(true);
-    setPaymentError(null);
-    setPaymentSuccess(false);
-
+    setSaveError(null);
     try {
-      const response = await fetch("/api/configs", {
+      const r = await fetch("/api/configs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ config }),
       });
-
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to save config");
-
+      const data = await r.json();
+      if (!data.success) throw new Error(data.error || "Save failed");
       setSavedConfigId(data.id);
-      setPaymentSuccess(true);
-      setIsPaymentModalOpen(false);
+      setIsSaveModalOpen(false);
       setIsUrlModalOpen(true);
-    } catch (error) {
-      console.error("Save error:", error);
-      setPaymentError(error instanceof Error ? error.message : "Save failed");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const copyConfigId = () => {
-    if (savedConfigId) {
-      navigator.clipboard.writeText(savedConfigId);
-    }
-  };
-
-  const copyEmbedUrl = () => {
-    if (savedConfigId) {
-      const embedUrl = `${window.location.origin}/embed/${savedConfigId}`;
-      navigator.clipboard.writeText(embedUrl);
-    }
-  };
-
-  const openPreview = () => {
-    if (savedConfigId) {
-      const previewUrl = `${window.location.origin}/embed/${savedConfigId}`;
-      window.open(previewUrl, "_blank");
-    }
-  };
+  const embedUrl = savedConfigId ? `${origin}/embed/${savedConfigId}` : "";
 
   return (
-    <div className="h-screen bg-black flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="h-14 border-b border-white/[0.08] bg-black/80 backdrop-blur-xl flex items-center justify-between px-6 flex-shrink-0">
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/"
-            className="flex items-center text-white/70 hover:text-white transition-colors text-sm"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+    <div className="min-h-screen px-6 lg:px-10 py-6 max-w-[1500px] mx-auto">
+      {/* Top bar */}
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-2 text-fg-muted hover:text-fg transition-colors">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M13 8H3m0 0l5-5m-5 5l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-sm">Back</span>
           </Link>
-          <div className="h-4 w-px bg-white/10" />
-          <h1 className="text-sm font-medium text-white">Frame Builder</h1>
+          <span className="w-px h-5 bg-edge" />
+          <h1 className="text-base font-semibold tracking-tight">Frame Builder</h1>
         </div>
-        <div className="flex items-center space-x-3">
-          <LoginButton />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSaveClick}
-            disabled={isProcessing}
-            className="text-white/70 hover:text-white hover:bg-white/5 h-8 px-3 text-xs"
+
+        <div className="flex items-center gap-3">
+          <span className={`chip ${isLoggedIn ? "chip-mint" : "chip-dark"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isLoggedIn ? "bg-[rgb(var(--mint-bright))]" : "bg-[rgb(var(--fg-dim))]"}`} />
+            {isLoggedIn ? "Connected" : "Disconnected"}
+          </span>
+          <LoginButton variant="transparent" size="sm" />
+          <button
+            onClick={() => setIsSaveModalOpen(true)}
+            disabled={isProcessing || !isLoggedIn}
+            className="btn-mint"
           >
-            <Save className="h-3 w-3 mr-1.5" />
-            {isProcessing ? "Processing..." : "Save & Deploy"}
-          </Button>
-          {savedConfigId && (
-            <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white/70 hover:text-white hover:bg-white/5 h-8 px-3 text-xs"
-                >
-                  <Copy className="h-3 w-3 mr-1.5" />
-                  Share URLs
-                </Button>
-              </DialogTrigger>
-            </Dialog>
-          )}
+            {isProcessing ? "Saving…" : "Save & Deploy"}
+            <ArrowRight />
+          </button>
         </div>
       </header>
 
-      {/* Payment Modal */}
-      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Deploy Frame for Production</DialogTitle>
-            <DialogDescription>
-              Deploy your frame for production use with a one-time payment of
-              0.001 ETH.
+      {/* Bento split */}
+      <div className="grid grid-cols-12 gap-4">
+        {/* Preview side */}
+        <section className="col-span-12 lg:col-span-7 fade-up">
+          <div className="card p-6 lg:p-8">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <span className="section-eyebrow">Preview</span>
+                <span className="mono text-[11px] text-fg-dim">720 × 720</span>
+              </div>
+
+              <StepNav
+                step={previewStep}
+                onChange={setPreviewStep}
+                hasAction={Boolean(config.functionName)}
+              />
+            </div>
+
+            {/* Canvas */}
+            <div className="relative aspect-square w-full max-w-[640px] mx-auto">
+              <FramePreview config={config} step={previewStep} />
+            </div>
+          </div>
+        </section>
+
+        {/* Config side */}
+        <aside className="col-span-12 lg:col-span-5 fade-up" style={{ animationDelay: "0.05s" }}>
+          <ConfigPanel
+            config={config}
+            updateConfig={updateConfig}
+            step={previewStep}
+            onStepChange={setPreviewStep}
+          />
+        </aside>
+      </div>
+
+      {/* Save modal */}
+      <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
+        <DialogContent className="sm:max-w-md card border-0 text-fg p-0 overflow-hidden" style={{ borderRadius: 24 }}>
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle className="text-2xl font-semibold tracking-tight">Deploy frame</DialogTitle>
+            <DialogDescription className="text-fg-muted mt-1">
+              Persists your config and returns a permanent embed URL. No on-chain action — your wallet stays untouched.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded">
-              <h3 className="font-medium text-blue-900 mb-2">What you get:</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Production-ready frame deployment</li>
-                <li>• Permanent shareable URLs</li>
-                <li>• Frame embedding capabilities</li>
-                <li>• Full verification functionality</li>
-              </ul>
+          <div className="px-6 pb-6 space-y-4 mt-4">
+            <div className="bg-surface-2 rounded-2xl p-4 space-y-2.5 text-sm">
+              <Row k="Title" v={config.title || "—"} />
+              <Row k="Program" v={truncateMid(config.credentialId, 22) || "—"} mono />
+              <Row k="Action" v={config.functionName ? `${config.functionName}()` : "—"} mono />
+              <Row k="Contract" v={truncateMid(config.contractAddress, 22) || "—"} mono />
             </div>
 
-            <div className="p-4 bg-gray-50 border rounded">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Deployment Fee:</span>
-                <span className="font-bold">0.001 ETH</span>
-              </div>
-            </div>
-
-            {paymentError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                {paymentError}
+            {saveError && (
+              <div className="rounded-2xl bg-[rgb(var(--crimson)/0.10)] text-[rgb(var(--crimson))] text-xs p-3 px-4">
+                {saveError}
               </div>
             )}
 
-            <div className="flex space-x-3">
-              <Button
-                variant="outline"
-                onClick={() => setIsPaymentModalOpen(false)}
-                className="flex-1"
-                disabled={isProcessing}
-              >
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setIsSaveModalOpen(false)} disabled={isProcessing} className="btn-ghost flex-1 justify-center">
                 Cancel
-              </Button>
-              <Button
-                onClick={handlePaymentAndSave}
-                disabled={isProcessing || !isLoggedIn}
-                className="flex-1"
-              >
-                {isProcessing
-                  ? "Processing..."
-                  : !isLoggedIn
-                  ? "Login Required"
-                  : "Pay & Deploy"}
-              </Button>
+              </button>
+              <button onClick={onSave} disabled={isProcessing || !isLoggedIn} className="btn-mint flex-[2] justify-center">
+                {isProcessing ? "Saving…" : !isLoggedIn ? "Connect first" : "Confirm"}
+                {!isProcessing && isLoggedIn && <ArrowRight />}
+              </button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* URL Sharing Modal */}
-      {savedConfigId && (
-        <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Frame Deployed Successfully! 🎉</DialogTitle>
-              <DialogDescription>
-                Your frame is now live! Copy the URLs below to share your frame.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              {/* Config ID */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Config ID</label>
-                <div className="flex items-center space-x-2">
-                  <code className="flex-1 px-3 py-2 bg-gray-100 rounded text-sm">
-                    {savedConfigId}
-                  </code>
-                  <Button
-                    size="sm"
-                    onClick={copyConfigId}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+      {/* URL share modal */}
+      <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
+        <DialogContent className="sm:max-w-lg card border-0 text-fg p-0 overflow-hidden" style={{ borderRadius: 24 }}>
+          <div className="card-mint">
+            <div className="px-6 py-7">
+              <div className="card-mint-inner inline-flex px-3 py-1.5 mb-4">
+                <span className="text-[11px] font-medium text-[#0f0f0f] tracking-wide uppercase">Deployed</span>
               </div>
-
-              {/* Embed URL */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Embed URL</label>
-                <div className="flex items-center space-x-2">
-                  <code className="flex-1 px-3 py-2 bg-gray-100 rounded text-sm break-all">
-                    {`${window.location.origin}/embed/${savedConfigId}`}
-                  </code>
-                  <Button
-                    size="sm"
-                    onClick={copyEmbedUrl}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Preview</label>
-                <Button
-                  onClick={openPreview}
-                  className="w-full"
-                  variant="outline"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Open Preview
-                </Button>
-              </div>
-
-              {/* Status Section */}
-              <div className="space-y-2 pt-4 border-t">
-                <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                  ✅ Frame successfully deployed and live!
-                </div>
-
-                <Button
-                  onClick={() => setIsPaymentModalOpen(true)}
-                  disabled={!isLoggedIn}
-                  className="w-full"
-                  variant="outline"
-                >
-                  Deploy New Version
-                </Button>
-              </div>
+              <div className="text-3xl font-semibold tracking-tight text-[#0f0f0f]">Frame is live</div>
+              <p className="text-[#0f0f0f]/70 mt-1 text-sm">
+                Share the URL or post it directly to X — it'll unfurl as a player card.
+              </p>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          </div>
+          <div className="px-6 py-6 space-y-4">
+            <Field label="Config ID" value={savedConfigId ?? ""} />
+            <Field label="Embed URL" value={embedUrl} />
+            <div className="flex gap-2 pt-2">
+              <a
+                href={embedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-ghost flex-1 justify-center"
+              >
+                Open preview
+              </a>
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                  config.title + "\n\n" + embedUrl
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-mint flex-1 justify-center"
+              >
+                Tweet it
+                <ArrowRight />
+              </a>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Preview Area */}
-        <div className="flex-1 bg-zinc-950 flex items-center justify-center">
-          <FramePreview config={config} />
-        </div>
+function ArrowRight() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M3 8h10m0 0L8 3m5 5l-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
-        {/* Config Panel */}
-        <div className="w-80 border-l border-white/[0.08] bg-black/95 backdrop-blur-xl flex flex-col">
-          <ConfigPanel config={config} updateConfig={updateConfig} />
-        </div>
+function StepNav({
+  step, onChange, hasAction,
+}: { step: FrameStep; onChange: (s: FrameStep) => void; hasAction: boolean }) {
+  const items: { v: FrameStep; label: string }[] = [
+    { v: "verify",  label: "Verify"  },
+    { v: "action",  label: hasAction ? "Action" : "Action +" },
+    { v: "success", label: "Success" },
+  ];
+  return (
+    <div className="inline-flex items-center gap-0.5 bg-surface-2 rounded-full p-1">
+      {items.map((it) => {
+        const active = step === it.v;
+        const isEmptyAction = it.v === "action" && !hasAction;
+        return (
+          <button
+            key={it.v}
+            onClick={() => onChange(it.v)}
+            className={`h-7 px-3 text-[12px] rounded-full transition-colors cursor-pointer flex items-center gap-1.5 ${
+              active
+                ? "bg-fg text-bg font-semibold"
+                : "text-fg-muted hover:text-fg"
+            }`}
+            title={isEmptyAction ? "No action wired — click to configure" : undefined}
+          >
+            {it.label}
+            {isEmptyAction && !active && (
+              <span className="w-1.5 h-1.5 rounded-full bg-mint" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="text-fg-muted text-xs">{k}</span>
+      <span className={`truncate max-w-[60%] text-sm ${mono ? "mono" : ""}`}>{v}</span>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="space-y-1.5">
+      <div className="field-label">{label}</div>
+      <div className="flex items-center bg-surface-2 rounded-xl">
+        <code className="flex-1 min-w-0 px-3.5 py-2.5 text-xs mono text-fg overflow-hidden text-ellipsis whitespace-nowrap">
+          {value || "—"}
+        </code>
+        <button
+          onClick={async () => {
+            await navigator.clipboard.writeText(value);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1400);
+          }}
+          aria-label="Copy"
+          className="shrink-0 w-10 h-10 flex items-center justify-center text-fg-muted hover:text-fg hover:bg-raised transition-colors rounded-r-xl cursor-pointer"
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+        </button>
       </div>
     </div>
   );
+}
+
+function CopyIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3 10V3.5A1.5 1.5 0 014.5 2H11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="text-[rgb(var(--mint-bright))]">
+      <path d="M3.5 8.5l3 3 6-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function truncateMid(s: string, n = 16) {
+  if (!s) return "";
+  if (s.length <= n) return s;
+  const half = Math.floor((n - 1) / 2);
+  return `${s.slice(0, half)}…${s.slice(-half)}`;
 }

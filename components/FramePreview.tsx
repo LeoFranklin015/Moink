@@ -1,14 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Heart,
-  MessageCircle,
-  Repeat2,
-  Bookmark,
-  Share,
-  MoreHorizontal,
-} from "lucide-react";
+import { useMemo, useState } from "react";
 
 export interface FrameConfig {
   logo: string;
@@ -24,18 +16,15 @@ export interface FrameConfig {
   contractAddress: string;
   abi: string;
   functionName: string;
+  actionButtonText: string;
 }
 
-interface FramePreviewProps {
-  config: FrameConfig;
-}
+export type FrameStep = "verify" | "action" | "success";
 
 interface FunctionInput {
   name: string;
   type: string;
-  internalType?: string;
 }
-
 interface AbiFunction {
   name: string;
   type: string;
@@ -43,360 +32,230 @@ interface AbiFunction {
   stateMutability?: string;
 }
 
-export function FramePreview({ config }: FramePreviewProps) {
-  const [showInputs, setShowInputs] = useState(false);
-  const [inputValues, setInputValues] = useState<Record<string, string>>({});
-  const [functionInputs, setFunctionInputs] = useState<FunctionInput[]>([]);
-  const [error, setError] = useState<string>("");
-
-  const parseAbiAndFindFunction = (): FunctionInput[] | null => {
+export function FramePreview({
+  config,
+  step = "verify",
+}: {
+  config: FrameConfig;
+  step?: FrameStep;
+}) {
+  const inputs = useMemo<FunctionInput[]>(() => {
     try {
-      if (!config.abi || !config.functionName) {
-        setError("ABI or function name not provided");
-        return null;
-      }
+      if (!config.abi || !config.functionName) return [];
+      const parsed = JSON.parse(config.abi) as AbiFunction[];
+      const fn = parsed.find((f) => f.type === "function" && f.name === config.functionName);
+      return fn?.inputs ?? [];
+    } catch { return []; }
+  }, [config.abi, config.functionName]);
 
-      const parsedAbi = JSON.parse(config.abi) as AbiFunction[];
-      const targetFunction = parsedAbi.find(
-        (item) => item.type === "function" && item.name === config.functionName
-      );
-
-      if (!targetFunction) {
-        setError(`Function "${config.functionName}" not found in ABI`);
-        return null;
-      }
-
-      setError("");
-      return targetFunction.inputs || [];
-    } catch (err) {
-      console.log(err);
-      setError("Invalid ABI format");
-      return null;
-    }
-  };
-
-  const handleButtonClick = () => {
-    if (!showInputs) {
-      const inputs = parseAbiAndFindFunction();
-      if (inputs) {
-        setFunctionInputs(inputs);
-        // Initialize input values
-        const initialValues: Record<string, string> = {};
-        inputs.forEach((input) => {
-          initialValues[input.name] = "";
-        });
-        setInputValues(initialValues);
-        setShowInputs(true);
-      }
-    } else {
-      // Handle form submission
-      console.log("Submitting with values:", inputValues);
-      // Here you would typically call the smart contract function
-      setShowInputs(false);
-    }
-  };
-
-  const handleInputChange = (paramName: string, value: string) => {
-    setInputValues((prev) => ({
-      ...prev,
-      [paramName]: value,
-    }));
-  };
-
-  const handleBack = () => {
-    setShowInputs(false);
-    setError("");
-  };
-
-  const getInputPlaceholder = (type: string) => {
-    if (type.includes("address")) return "0x...";
-    if (type.includes("uint")) return "0";
-    if (type.includes("string")) return "Enter text";
-    if (type.includes("bool")) return "true/false";
-    return `${type} value`;
-  };
+  const hasAction = Boolean(config.functionName);
+  const stepNumber = step === "verify" ? 1 : step === "action" ? 2 : 3;
+  const totalSteps = hasAction ? 3 : 2;
+  const visibleStepNumber = hasAction ? stepNumber : step === "verify" ? 1 : 2;
 
   return (
-    <div className="w-full max-w-2xl">
-      {/* Twitter Post Container */}
-      <div className="bg-black border border-white rounded-2xl overflow-hidden">
-        {/* Twitter Header */}
-        <div className="p-4 flex items-start space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">M</span>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center space-x-2">
-              <span className="text-white font-semibold text-sm">Moink</span>
-              <span className="text-white/50 text-sm">@moink_app</span>
-              <span className="text-white/30">·</span>
-              <span className="text-white/50 text-sm">Sponsored</span>
-            </div>
-            <p className="text-white/90 text-sm mt-1 leading-relaxed">
-              Create your frame here to maximize your engagement and conversions
-            </p>
-          </div>
-          <button className="text-white/50 hover:text-white/70 p-1">
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+    <div
+      className="relative w-full h-full overflow-hidden rounded-[20px]"
+      style={{ backgroundColor: config.backgroundColor || "#0b0b0c" }}
+    >
+      {/* Background image */}
+      {config.backgroundImage && (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${config.backgroundImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: 0.55,
+          }}
+        />
+      )}
+      {/* Readability layer */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.60) 60%, rgba(0,0,0,0.92) 100%)",
+        }}
+      />
+
+      {/* Content */}
+      <div className="relative z-10 h-full flex flex-col p-8 lg:p-10">
+        {/* Header: brand + step indicator */}
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] tracking-[0.18em] uppercase text-white/70 font-medium">
+            identity<span className="text-mint">X</span>
+          </span>
+          <span className="mono text-[11px] text-white/45 tabular-nums tracking-[0.06em]">
+            {String(visibleStepNumber).padStart(2, "0")} / {String(totalSteps).padStart(2, "0")}
+          </span>
         </div>
 
-        {/* Frame Content */}
-        <div className="mx-4 mb-4 flex justify-center">
-          <div
-            className="rounded-xl overflow-hidden border border-white/[0.08] relative"
-            style={{
-              backgroundColor: config.backgroundColor,
-              width: "456px",
-              height: "456px",
-              maxWidth: "calc(100vw - 2rem)",
-              aspectRatio: "1/1",
-            }}
-          >
-            {/* Extended blur background - covers entire frame */}
-            {config.backgroundImage && (
-              <>
-                {/* Full blur coverage background */}
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage: `url(${config.backgroundImage})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                    filter: "blur(25px)",
-                    transform: "scale(1.2)",
-                  }}
-                />
-                {/* Stronger blur overlay for better coverage */}
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage: `url(${config.backgroundImage})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                    filter: "blur(15px)",
-                    opacity: 0.7,
-                    transform: "scale(1.15)",
-                  }}
-                />
-                {/* Main image layer */}
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage: `url(${config.backgroundImage})`,
-                    backgroundSize: "contain",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                  }}
-                />
-              </>
-            )}
-
-            {/* Enhanced gradient overlay for better text visibility */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
-
-            <div className="relative z-10 p-6 h-full flex flex-col">
-              {/* Top Section: Logo positioned top right (only if provided) */}
-              <div className="flex justify-end mb-4">
-                {config.logo && (
-                  <img
-                    src={config.logo}
-                    alt="Logo"
-                    className="h-16 w-16 object-cover rounded-full border-2 border-white/40 shadow-lg"
-                  />
-                )}
-              </div>
-
-              {/* Main Content Area */}
-              <div className="flex-1 flex flex-col justify-between">
-                {/* Left Side Content over overlay */}
-                <div className="max-w-xs">
-                  {/* Title */}
-                  <h3
-                    className="text-white font-bold text-2xl mb-3 leading-tight"
-                    style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.9)" }}
-                  >
-                    {config.title || "Frame Title"}
-                  </h3>
-
-                  {/* Description */}
-                  <p
-                    className="text-white/95 text-base mb-4 leading-relaxed font-medium"
-                    style={{ textShadow: "1px 1px 4px rgba(0,0,0,0.8)" }}
-                  >
-                    {config.description || "Frame description"}
-                  </p>
-
-                  {/* Verification Info */}
-                  <div className="mb-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-3 h-3 bg-blue-400 rounded-full shadow-sm"></div>
-                      <span
-                        className="text-white/90 text-sm font-semibold"
-                        style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
-                      >
-                        Verification Required
-                      </span>
-                    </div>
-                    <div
-                      className="text-white/85 text-sm pl-5"
-                      style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
-                    >
-                      {config.verificationRequirement}
-                    </div>
-                  </div>
-                </div>
-
-                {!showInputs ? (
-                  // Action Button positioned on the left
-                  <div className="flex justify-start">
-                    <button
-                      onClick={handleButtonClick}
-                      className="text-white font-bold py-3 px-6 rounded-lg transition-all text-base hover:opacity-90 hover:scale-105 transform shadow-2xl border-2 border-white/30 backdrop-blur-sm"
-                      style={{
-                        backgroundColor: config.buttonColor,
-                        textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          config.buttonHoverColor;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          config.buttonColor;
-                      }}
-                    >
-                      {config.buttonText || "Verify"}
-                    </button>
-
-                    {/* Error Display */}
-                    {error && (
-                      <div className="absolute bottom-4 left-6 right-6 p-2 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded text-red-200 text-xs">
-                        {error}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Function Inputs Section - overlay style
-                  <div className="bg-black/60 backdrop-blur-md border border-white/20 rounded-xl p-4 shadow-2xl">
-                    <div className="mb-4">
-                      <h4
-                        className="text-white font-semibold text-lg mb-2"
-                        style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
-                      >
-                        Complete Verification
-                      </h4>
-                    </div>
-
-                    {/* Function Inputs */}
-                    <div className="space-y-3 mb-4">
-                      {functionInputs.map((input, index) => (
-                        <div key={index}>
-                          <label className="block text-white/90 text-sm mb-2 font-medium">
-                            {input.name}
-                            <span className="text-white/70 ml-1 text-xs">
-                              ({input.type})
-                            </span>
-                          </label>
-                          <input
-                            type="text"
-                            value={inputValues[input.name] || ""}
-                            onChange={(e) =>
-                              handleInputChange(input.name, e.target.value)
-                            }
-                            placeholder={getInputPlaceholder(input.type)}
-                            className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-400/50 focus:bg-white/20 placeholder-white/50"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={handleBack}
-                        className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-lg transition-colors text-base border border-white/30"
-                      >
-                        Back
-                      </button>
-                      <button
-                        onClick={handleButtonClick}
-                        disabled={functionInputs.some(
-                          (input) => !inputValues[input.name]?.trim()
-                        )}
-                        className="flex-[2] text-white font-bold py-3 px-6 rounded-lg transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:scale-105 transform shadow-xl border-2 border-white/30 backdrop-blur-sm"
-                        style={{
-                          backgroundColor: functionInputs.some(
-                            (input) => !inputValues[input.name]?.trim()
-                          )
-                            ? "#666"
-                            : config.buttonColor,
-                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-                          boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (
-                            !functionInputs.some(
-                              (input) => !inputValues[input.name]?.trim()
-                            )
-                          ) {
-                            e.currentTarget.style.backgroundColor =
-                              config.buttonHoverColor;
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (
-                            !functionInputs.some(
-                              (input) => !inputValues[input.name]?.trim()
-                            )
-                          ) {
-                            e.currentTarget.style.backgroundColor =
-                              config.buttonColor;
-                          }
-                        }}
-                      >
-                        Execute {config.functionName}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+        {/* Hero region */}
+        <div className="flex-1 flex flex-col justify-center -mt-6">
+          {step === "verify" && <VerifyState config={config} />}
+          {step === "action" && <ActionState config={config} inputs={inputs} />}
+          {step === "success" && <SuccessState config={config} />}
         </div>
 
-        {/* Twitter Actions */}
-        <div className="px-4 pb-3 flex items-center justify-between text-white/50">
-          <button className="flex items-center space-x-2 hover:text-white/70 transition-colors">
-            <MessageCircle className="h-4 w-4" />
-            <span className="text-xs">12</span>
-          </button>
-          <button className="flex items-center space-x-2 hover:text-white/70 transition-colors">
-            <Repeat2 className="h-4 w-4" />
-            <span className="text-xs">8</span>
-          </button>
-          <button className="flex items-center space-x-2 hover:text-white/70 transition-colors">
-            <Heart className="h-4 w-4" />
-            <span className="text-xs">24</span>
-          </button>
-          <button className="flex items-center space-x-2 hover:text-white/70 transition-colors">
-            <Bookmark className="h-4 w-4" />
-          </button>
-          <button className="flex items-center space-x-2 hover:text-white/70 transition-colors">
-            <Share className="h-4 w-4" />
-          </button>
+        {/* Step pips */}
+        <div className="flex items-center gap-1.5 mb-6">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <span
+              key={i}
+              className={`h-0.5 rounded-full transition-all ${
+                i + 1 === visibleStepNumber ? "w-8 bg-mint" : "w-3 bg-white/15"
+              }`}
+            />
+          ))}
         </div>
-      </div>
 
-      {/* Preview Info */}
-      <div className="mt-4 text-center">
-        <p className="text-white/40 text-xs">
-          Live preview • Updates in real-time
-        </p>
+        {/* CTA */}
+        {step === "verify" && (
+          <CtaButton color={config.buttonColor} hover={config.buttonHoverColor}>
+            {config.buttonText || "Verify"} <Arrow />
+          </CtaButton>
+        )}
+        {step === "action" && (
+          <CtaButton color={config.buttonColor} hover={config.buttonHoverColor}>
+            {config.actionButtonText
+              ? config.actionButtonText
+              : `Execute ${config.functionName ? `${config.functionName}()` : "action"}`}
+            <Arrow />
+          </CtaButton>
+        )}
+        {step === "success" && (
+          <button className="h-12 rounded-[14px] bg-white/10 text-white text-[14px] font-medium inline-flex items-center justify-center gap-2 transition-colors hover:bg-white/15 cursor-pointer">
+            View on explorer <Arrow />
+          </button>
+        )}
       </div>
     </div>
+  );
+}
+
+/* ---------- States ---------- */
+
+function VerifyState({ config }: { config: FrameConfig }) {
+  return (
+    <>
+      {config.title && (
+        <div className="text-[12px] tracking-[0.14em] uppercase text-white/55 font-medium mb-3">
+          {config.title}
+        </div>
+      )}
+      <h2
+        className="text-white font-semibold tracking-tight leading-[1.04]"
+        style={{ fontSize: "clamp(28px, 4.4vw, 46px)" }}
+      >
+        {config.verificationRequirement || "Prove a credential to continue"}
+      </h2>
+      {config.description && (
+        <p className="text-white/65 mt-4 leading-relaxed text-[14px] max-w-[440px]">
+          {config.description}
+        </p>
+      )}
+    </>
+  );
+}
+
+function ActionState({ config, inputs }: { config: FrameConfig; inputs: FunctionInput[] }) {
+  const truncate = (s: string) => (s.length <= 14 ? s : `${s.slice(0, 6)}…${s.slice(-4)}`);
+  return (
+    <>
+      <div className="inline-flex items-center gap-2 mb-4">
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-mint">
+          <Check />
+        </span>
+        <span className="text-[12px] tracking-[0.14em] uppercase text-mint font-medium">
+          Verified
+        </span>
+      </div>
+      <h2
+        className="text-white font-semibold tracking-tight leading-[1.02] break-all"
+        style={{ fontSize: "clamp(28px, 4.4vw, 44px)" }}
+      >
+        <span className="mono">{config.functionName || "execute"}()</span>
+      </h2>
+      {config.contractAddress && (
+        <div className="mt-4 text-[13px] text-white/55">
+          on <span className="mono text-white/80">{truncate(config.contractAddress)}</span>
+        </div>
+      )}
+      {inputs.length > 0 && (
+        <div className="mt-5 space-y-1.5">
+          {inputs.map((inp) => (
+            <div
+              key={inp.name}
+              className="flex items-baseline justify-between gap-3 text-[12px] mono"
+            >
+              <span className="text-white/55">{inp.name || "_"}</span>
+              <span className="text-white/35">{inp.type}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function SuccessState({ config }: { config: FrameConfig }) {
+  return (
+    <>
+      <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-mint mb-6">
+        <Check large />
+      </span>
+      <h2
+        className="text-white font-semibold tracking-tight leading-[1.02]"
+        style={{ fontSize: "clamp(28px, 4.4vw, 44px)" }}
+      >
+        Done.
+      </h2>
+      <p className="text-white/65 mt-3 leading-relaxed text-[14px] max-w-[440px]">
+        {config.functionName
+          ? <>Verified &amp; executed <span className="mono text-white/85">{config.functionName}()</span>. Tx settled on Moca testnet.</>
+          : <>Credential verified. You're cleared.</>
+        }
+      </p>
+      <div className="mt-5 inline-flex items-center gap-2 text-[12px] text-white/55 mono">
+        <span className="w-1.5 h-1.5 rounded-full bg-mint" />
+        0xa8d9…7c0b
+      </div>
+    </>
+  );
+}
+
+/* ---------- Atoms ---------- */
+
+function CtaButton({
+  color, hover, children,
+}: { color: string; hover: string; children: React.ReactNode }) {
+  const [over, setOver] = useState(false);
+  return (
+    <button
+      onMouseEnter={() => setOver(true)}
+      onMouseLeave={() => setOver(false)}
+      className="h-12 rounded-[14px] text-[#0b0b0c] font-semibold text-[14px] inline-flex items-center justify-center gap-2 transition-colors cursor-pointer"
+      style={{ backgroundColor: over ? hover : color, letterSpacing: "0.02em" }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Arrow() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M3 8h10m0 0L8 3m5 5l-5 5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function Check({ large }: { large?: boolean }) {
+  const s = large ? 22 : 12;
+  return (
+    <svg width={s} height={s} viewBox="0 0 16 16" fill="none">
+      <path d="M3.5 8.5l3 3 6-7" stroke="#0b0b0c" strokeWidth={large ? 2 : 2.2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

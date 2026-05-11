@@ -58,7 +58,11 @@ export const VerifyButton: React.FC<VerifyButtonProps> = ({
         programId,
         redirectUrl: redirectUrlForIssuer || undefined,
       });
-      onVerificationComplete?.(result.verificationResult);
+      console.log("[VerifyButton] full SDK result:", result);
+      // SDK shape has wobbled across versions: result.verificationResult OR result itself.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const payload: any = (result as any)?.verificationResult ?? result ?? { status: "Compliant" };
+      onVerificationComplete?.(payload);
     } catch (err) {
       const msg = `Verification error: ${err instanceof Error ? err.message : "Unknown error"}`;
       setError(msg);

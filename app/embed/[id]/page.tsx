@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import DonatePage from "../../frame/page";
 
-function getBaseUrl(): string {
+async function getBaseUrl(): Promise<string> {
+  // Prefer the actual host of the incoming request — survives tunnel URL changes.
+  try {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") || h.get("host");
+    const proto = h.get("x-forwarded-proto") || (host?.startsWith("localhost") ? "http" : "https");
+    if (host) return `${proto}://${host}`;
+  } catch { /* not in request context */ }
+
   if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3020";
@@ -13,7 +22,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const baseUrl = getBaseUrl();
+  const baseUrl = await getBaseUrl();
 
   let config: { title?: string; description?: string; backgroundImage?: string } | null = null;
   try {

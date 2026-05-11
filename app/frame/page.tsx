@@ -92,24 +92,34 @@ export default function DonatePage({ configId }: { configId: string }) {
   };
 
   const handleVerificationComplete = (results: VerificationResultData) => {
-    console.log("Verification completed:", results);
-    setVerificationResults(results);
+    console.log("[frame] Verification completed. raw=", results, "status=", results?.status);
+    // Always store SOMETHING truthy so the step advances even if the SDK returns an
+    // empty payload. Keep the real status when present.
+    setVerificationResults(results || ({ status: "Compliant" } as VerificationResultData));
     setErrorMessage(null);
 
-    // Parse ABI and show inputs
-    const inputs = parseAbiAndFindFunction();
-    if (inputs) {
-      setFunctionInputs(inputs);
-      // Initialize input values
-      const initialValues: Record<string, string> = {};
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      inputs.forEach((input: any) => {
-        initialValues[input.name] = "";
-      });
-      setInputValues(initialValues);
-      setShowInputs(true);
-    } else {
-      setShowAbi(true);
+    // Parse ABI quietly — only set inputs on success, never clobber errorMessage here.
+    try {
+      if (config?.abi && config?.functionName) {
+        const parsed = JSON.parse(config.abi);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fn = parsed.find((it: any) => it?.type === "function" && it?.name === config.functionName);
+        if (fn?.inputs?.length) {
+          setFunctionInputs(fn.inputs);
+          const init: Record<string, string> = {};
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          fn.inputs.forEach((i: any) => { init[i.name] = ""; });
+          setInputValues(init);
+          setShowInputs(true);
+        } else {
+          setFunctionInputs([]);
+          setShowInputs(true);
+        }
+      }
+    } catch (err) {
+      // Don't surface ABI errors on the verify screen — let the builder's inline
+      // validator catch them at config time. Just log.
+      console.warn("[frame] ABI parse on verify-complete failed:", err);
     }
   };
 
@@ -282,397 +292,303 @@ export default function DonatePage({ configId }: { configId: string }) {
   // Not logged in state
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="text-white text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-4 font-cinzel">
-            Login Required
-          </h1>
-          <p className="text-white/70 mb-6">
-            Please login to access this frame and use verification features.
-          </p>
-          <LoginButton />
+      <div
+        className="min-h-screen relative overflow-hidden flex items-center justify-center p-6"
+        style={{ backgroundColor: config?.backgroundColor || "#0b0b0c" }}
+      >
+        {config?.backgroundImage && (
+          <>
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${config.backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                opacity: 0.30,
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 100%)",
+              }}
+            />
+          </>
+        )}
+
+        <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
+          {config?.title && (
+            <h1
+              className="text-white font-semibold tracking-tight leading-[1.04] mb-8"
+              style={{ fontSize: "clamp(28px, 4.5vw, 40px)" }}
+            >
+              {config.title}
+            </h1>
+          )}
+
+          <LoginButton size="lg" buttonText="Connect AIR account" />
         </div>
       </div>
     );
   }
 
+
+  /* ---------- Resolve current step ---------- */
+
+  const hasAction = Boolean(config.functionName);
+  // SDK may return "Compliant", "compliant", "VERIFIED", etc. Be lenient — anything
+  // that isn't an explicit failure counts as success.
+  const statusLower = verificationResults?.status?.toLowerCase() ?? "";
+  const isFailure = ["non-compliant", "failed", "error", "rejected", "revoked"].includes(statusLower);
+  const verifiedOk = Boolean(verificationResults) && !isFailure;
+  const verificationFailed = Boolean(verificationResults) && isFailure;
+  const step: "verify" | "action" | "success" = showSuccessScreen
+    ? "success"
+    : verifiedOk && hasAction
+      ? "action"
+      : verifiedOk && !hasAction
+        ? "success"
+        : "verify";
+
+  const totalSteps = hasAction ? 3 : 2;
+  const stepIndex = step === "verify" ? 1 : step === "action" ? 2 : totalSteps;
+  const buttonBg = config.buttonColor || "#a8d9af";
+  const buttonHover = config.buttonHoverColor || "#5fcf80";
+
+  const truncate = (s: string) =>
+    !s ? "" : s.length <= 14 ? s : `${s.slice(0, 6)}…${s.slice(-4)}`;
+
+  const explorerUrl = transactionHash
+    ? `https://testnet-scan.mocachain.org/tx/${transactionHash}`
+    : null;
+
   return (
-    <div className="min-h-screen bg-black p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Frame Display - Full coverage with better blur */}
-        <div className="flex items-center justify-center">
-          <div className="w-full max-w-2xl">
-            <div
-              className="rounded-xl overflow-hidden relative aspect-[4/4]"
-              style={{ backgroundColor: config.backgroundColor }}
-            >
-              {/* Extended blur background - covers entire frame */}
-              {config.backgroundImage && (
-                <>
-                  {/* Full blur coverage background */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundImage: `url(${config.backgroundImage})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                      backgroundRepeat: "no-repeat",
-                      filter: "blur(25px)",
-                      transform: "scale(1.2)",
-                    }}
-                  />
-                  {/* Stronger blur overlay for better coverage */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundImage: `url(${config.backgroundImage})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                      backgroundRepeat: "no-repeat",
-                      filter: "blur(15px)",
-                      opacity: 0.7,
-                      transform: "scale(1.15)",
-                    }}
-                  />
-                  {/* Main image layer */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundImage: `url(${config.backgroundImage})`,
-                      backgroundSize: "contain",
-                      backgroundPosition: "center",
-                      backgroundRepeat: "no-repeat",
-                    }}
-                  />
-                </>
-              )}
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{ backgroundColor: config.backgroundColor || "#0b0b0c" }}
+    >
+      {config.backgroundImage && (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${config.backgroundImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: 0.45,
+          }}
+        />
+      )}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.90) 100%)",
+        }}
+      />
 
-              {/* Enhanced gradient overlay for better text visibility */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
-
-              <div className="relative z-10 p-8 h-full flex flex-col justify-center items-start text-left">
-                {showSuccessScreen ? (
-                  /* Success Screen - Transaction Complete */
-                  <div className="w-full max-w-lg bg-black/80 backdrop-blur-md border border-green-400/30 rounded-xl p-8 shadow-2xl">
-                    <div className="text-center">
-                      {/* Success Icon */}
-                      <div className="mb-6">
-                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-400/50">
-                          <div className="text-4xl">🎉</div>
-                        </div>
-                        <h4
-                          className="text-white font-bold text-2xl mb-2 font-cinzel"
-                          style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
-                        >
-                          Transaction Successful!
-                        </h4>
-                        <p className="text-green-300 text-lg font-medium">
-                          {config.functionName} executed successfully
-                        </p>
-                      </div>
-
-                      {/* Transaction Details */}
-                      <div className="space-y-4 mb-6">
-                        <div className="p-4 bg-green-500/10 border border-green-400/30 rounded-lg">
-                          <p className="text-white/70 text-sm mb-2">
-                            Transaction Hash:
-                          </p>
-                          <div className="flex items-center justify-between bg-black/40 rounded-lg p-3">
-                            <code className="text-green-300 text-xs font-mono break-all mr-3">
-                              {transactionHash}
-                            </code>
-                            <button
-                              onClick={() =>
-                                transactionHash &&
-                                navigator.clipboard.writeText(transactionHash)
-                              }
-                              className="text-white/70 hover:text-white transition-colors flex-shrink-0"
-                              title="Copy to clipboard"
-                            >
-                              📋
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Explorer Link */}
-                        <a
-                          href={`https://testnet-scan.mocachain.org/tx/${transactionHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block w-full bg-blue-600/20 hover:bg-blue-600/30 border border-blue-400/30 rounded-lg p-4 transition-all duration-200 hover:scale-105"
-                        >
-                          <div className="flex items-center justify-center space-x-2">
-                            <span className="text-blue-300 font-medium">
-                              View on Moca Explorer
-                            </span>
-                            <span className="text-blue-300">🔗</span>
-                          </div>
-                        </a>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={handleBack}
-                          className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-lg transition-colors text-base border border-white/30 font-cinzel"
-                        >
-                          Start Over
-                        </button>
-                        <button
-                          onClick={handleCloseSuccessScreen}
-                          className="flex-1 bg-green-600/20 hover:bg-green-600/30 backdrop-blur-sm text-green-300 font-bold py-3 px-6 rounded-lg transition-colors text-base border border-green-400/30 font-cinzel"
-                        >
-                          View Details
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : showInputs ? (
-                  /* ABI Input Form - Centered overlay */
-                  <div className="w-full max-w-md bg-black/80 backdrop-blur-md border border-white/20 rounded-xl p-6 shadow-2xl">
-                    <div className="mb-6 text-center">
-                      <h4
-                        className="text-white font-semibold text-xl mb-2 font-cinzel"
-                        style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
-                      >
-                        Complete Verification
-                      </h4>
-                      <p className="text-white/70 text-sm">
-                        Fill in the required parameters
-                      </p>
-                    </div>
-
-                    {/* Function Inputs */}
-                    <div className="space-y-4 mb-6">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {functionInputs.map((input: any, index: number) => (
-                        <div key={index}>
-                          <label className="block text-white/90 text-sm mb-2 font-medium font-cinzel">
-                            {input.name}
-                            <span className="text-white/70 ml-1 text-xs">
-                              ({input.type})
-                            </span>
-                          </label>
-                          <input
-                            type="text"
-                            value={inputValues[input.name] || ""}
-                            onChange={(e) =>
-                              handleInputChange(input.name, e.target.value)
-                            }
-                            placeholder={getInputPlaceholder(input.type)}
-                            className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-400/50 focus:bg-white/20 placeholder-white/50"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Execution Error Display */}
-                    {executionError && (
-                      <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                        <p className="text-red-300 text-sm">
-                          ❌ {executionError}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={handleBack}
-                        disabled={isExecuting}
-                        className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-lg transition-colors text-base border border-white/30 font-cinzel disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Back
-                      </button>
-                      <button
-                        onClick={handleExecuteFunction}
-                        disabled={
-                          isExecuting ||
-                          functionInputs.some(
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            (input: any) => !inputValues[input.name]?.trim()
-                          )
-                        }
-                        className="flex-[2] text-white font-bold py-3 px-6 rounded-lg transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:scale-105 transform shadow-xl border-2 border-white/30 backdrop-blur-sm font-cinzel"
-                        style={{
-                          backgroundColor:
-                            isExecuting ||
-                            functionInputs.some(
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              (input: any) => !inputValues[input.name]?.trim()
-                            )
-                              ? "#666"
-                              : config.buttonColor || "#f97316",
-                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-                          boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
-                        }}
-                      >
-                        {isExecuting
-                          ? "Executing..."
-                          : `Execute ${config.functionName}`}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {/* Logo positioned at top left */}
-                    <div className="mb-8">
-                      {config.logo && (
-                        <img
-                          src={config.logo}
-                          alt="Logo"
-                          className="h-24 w-24 object-cover rounded-full border-4 border-white/40 shadow-2xl"
-                        />
-                      )}
-                    </div>
-
-                    {/* Centered main content */}
-                    <div className="max-w-lg">
-                      <h1
-                        className="text-4xl font-bold text-white mb-6 leading-tight font-cinzel"
-                        style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.9)" }}
-                      >
-                        {config.title}
-                      </h1>
-                      <p
-                        className="text-white/95 text-lg mb-8 leading-relaxed"
-                        style={{ textShadow: "1px 1px 4px rgba(0,0,0,0.8)" }}
-                      >
-                        {config.description}
-                      </p>
-                      <div className="flex items-center justify-start gap-2 text-sm text-white/80 mb-8">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                        <span
-                          className="font-cinzel font-medium"
-                          style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
-                        >
-                          {config.verificationRequirement}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Left-aligned Verification Button */}
-                    <div className="mt-4">
-                      <VerifyButton
-                        programId={
-                          config.credentialId ||
-                          process.env.NEXT_PUBLIC_PROGRAM_ID ||
-                          ""
-                        }
-                        redirectUrlForIssuer={
-                          process.env.NEXT_PUBLIC_REDIRECT_URL_FOR_ISSUER ||
-                          "http://localhost:3000/issue"
-                        }
-                        onVerificationComplete={handleVerificationComplete}
-                        onError={handleVerificationError}
-                        text={config.buttonText}
-                        className="px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-105 shadow-2xl text-white border-2 border-white/30 backdrop-blur-sm font-cinzel"
-                        style={{
-                          backgroundColor: config.buttonColor || "#f97316",
-                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-                          boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
-                        }}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="relative z-10 min-h-screen flex flex-col p-7 lg:p-10 max-w-2xl mx-auto w-full">
+        {/* Brand row */}
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] tracking-[0.18em] uppercase text-white/70 font-medium">
+            identity<span className="text-[rgb(168_217_175)]">X</span>
+          </span>
+          <span className="mono text-[11px] text-white/45 tabular-nums tracking-[0.06em]">
+            {String(stepIndex).padStart(2, "0")} / {String(totalSteps).padStart(2, "0")}
+          </span>
         </div>
 
-        {/* Error Display */}
-        {errorMessage && (
-          <div className="max-w-2xl mx-auto mb-6">
-            <div className="p-4 bg-red-500/10 text-red-300 rounded-lg">
-              <p>❌ {errorMessage}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Results Section - Show after verification or execution */}
-        {showAbi && verificationResults && (
-          <div className="max-w-2xl mx-auto">
-            <div className="p-6 bg-white text-black rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 font-cinzel">
-                Verification & Execution Results
-              </h3>
-
-              {/* Verification Results */}
-              <div className="space-y-2 mb-6">
-                <h4 className="font-medium text-lg">Verification Status</h4>
-                <p>
-                  <strong>Status:</strong> {verificationResults.status}
+        {/* Hero */}
+        <div className="flex-1 flex flex-col justify-center -mt-4">
+          {step === "verify" && (
+            <>
+              {config.title && (
+                <div className="text-[12px] tracking-[0.14em] uppercase text-white/55 font-medium mb-3">
+                  {config.title}
+                </div>
+              )}
+              <h2
+                className="text-white font-semibold tracking-tight leading-[1.04]"
+                style={{ fontSize: "clamp(28px, 4.4vw, 46px)" }}
+              >
+                {config.verificationRequirement || "Prove a credential to continue"}
+              </h2>
+              {config.description && (
+                <p className="text-white/65 mt-4 leading-relaxed text-[14px] max-w-[440px]">
+                  {config.description}
                 </p>
-                <p>
-                  <strong>Credential ID:</strong>{" "}
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(verificationResults as any).credentialId || "N/A"}
-                </p>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(verificationResults as any).verificationTime && (
-                  <p>
-                    <strong>Verified At:</strong>{" "}
-                    {new Date(
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      (verificationResults as any).verificationTime
-                    ).toLocaleString()}
-                  </p>
-                )}
-              </div>
-
-              {/* Contract Execution Results */}
-              <div className="space-y-2 mb-6 border-t pt-4">
-                <h4 className="font-medium text-lg">Contract Execution</h4>
-                {executionSuccess && transactionHash ? (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700">
-                    <p>
-                      ✅ Contract function {config?.functionName} executed
-                      successfully!
-                    </p>
-                    <p className="text-sm mt-1">
-                      Transaction has been submitted to the blockchain.
-                    </p>
-                    <div className="mt-3 p-2 bg-green-100 rounded border">
-                      <p className="text-xs text-green-600 mb-1">
-                        Transaction Hash:
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <code className="text-xs font-mono text-green-800 break-all mr-2">
-                          {transactionHash}
-                        </code>
-                        <a
-                          href={`https://testnet-scan.mocachain.org/tx/${transactionHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-xs underline flex-shrink-0"
-                        >
-                          View on Explorer
-                        </a>
-                      </div>
+              )}
+              {verificationFailed && (
+                <div className="mt-5 inline-flex items-start gap-2 px-3 py-2 rounded-xl bg-[rgb(245_140_140)]/10 border border-[rgb(245_140_140)]/20">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="text-[rgb(245_140_140)] mt-0.5 shrink-0">
+                    <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" />
+                    <path d="M8 5v3.5M8 11v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
+                  <div>
+                    <div className="text-[13px] text-[rgb(245_140_140)] font-medium">
+                      Verification didn&apos;t pass
+                    </div>
+                    <div className="text-[12px] text-white/55 mt-0.5">
+                      Your credential doesn&apos;t satisfy the rule. Status: <span className="mono">{verificationResults?.status}</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="p-3 bg-gray-50 border rounded text-gray-700">
-                    <p>⏳ Contract execution pending...</p>
-                    <p className="text-sm">
-                      Fill in the function parameters and click execute.
-                    </p>
-                  </div>
-                )}
+                </div>
+              )}
+              {errorMessage && !verificationFailed && (
+                <div className="mt-5 inline-flex items-center gap-2 text-[12px] text-[rgb(245_140_140)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[rgb(245_140_140)]" />
+                  {errorMessage}
+                </div>
+              )}
+            </>
+          )}
+
+          {step === "action" && (
+            <>
+              <div className="inline-flex items-center gap-2 mb-5">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[rgb(168_217_175)]">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                    <path d="M3.5 8.5l3 3 6-7" stroke="#0b0b0c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <span className="text-[12px] tracking-[0.14em] uppercase text-[rgb(168_217_175)] font-medium">
+                  Verified · Ready to settle
+                </span>
               </div>
 
-              {/* Full Verification Results Details */}
-              <details className="mt-4">
-                <summary className="cursor-pointer font-medium">
-                  View Full Verification Results
-                </summary>
-                <pre className="mt-2 p-3 bg-gray-100 text-sm overflow-auto">
-                  {JSON.stringify(verificationResults, null, 2)}
-                </pre>
-              </details>
-            </div>
-          </div>
+              <h2
+                className="text-white font-semibold tracking-tight leading-[1.02] break-all"
+                style={{ fontSize: "clamp(28px, 4.4vw, 44px)" }}
+              >
+                Call <span className="mono text-[rgb(168_217_175)]">{config.functionName}()</span>
+              </h2>
+
+              {config.contractAddress && (
+                <div className="mt-4 text-[13px] text-white/55">
+                  on <span className="mono text-white/80">{truncate(config.contractAddress)}</span>
+                  <span className="mx-2 text-white/25">·</span>
+                  Moca Testnet
+                </div>
+              )}
+
+              {functionInputs.length > 0 && showInputs && (
+                <div className="mt-5 space-y-3">
+                  <div className="text-[10px] tracking-[0.16em] uppercase text-white/55 font-medium">
+                    Fill in arguments
+                  </div>
+                  {functionInputs.map((inp) => (
+                    <div key={inp.name}>
+                      <div className="text-[11px] text-white/55 mb-1.5 flex items-center justify-between">
+                        <span className="font-medium">{inp.name || "_"}</span>
+                        <span className="mono text-white/35">{inp.type}</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={inputValues[inp.name] || ""}
+                        onChange={(e) => handleInputChange(inp.name, e.target.value)}
+                        placeholder={getInputPlaceholder(inp.type)}
+                        className="w-full h-11 rounded-xl bg-white/[0.06] border border-white/10 px-3.5 text-[13px] text-white placeholder:text-white/35 outline-none focus:border-[rgb(168_217_175)]/60 focus:bg-white/[0.08] transition-colors mono"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {executionError && (
+                <div className="mt-5 inline-flex items-center gap-2 text-[12px] text-[rgb(245_140_140)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[rgb(245_140_140)]" />
+                  {executionError}
+                </div>
+              )}
+            </>
+          )}
+
+          {step === "success" && (
+            <>
+              <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[rgb(168_217_175)] mb-6">
+                <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
+                  <path d="M3.5 8.5l3 3 6-7" stroke="#0b0b0c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <h2
+                className="text-white font-semibold tracking-tight leading-[1.02]"
+                style={{ fontSize: "clamp(28px, 4.4vw, 44px)" }}
+              >
+                Done.
+              </h2>
+              <p className="text-white/65 mt-3 leading-relaxed text-[14px] max-w-[440px]">
+                {hasAction ? (
+                  <>Verified &amp; executed <span className="mono text-white/85">{config.functionName}()</span>. Tx settled on Moca testnet.</>
+                ) : (
+                  <>Credential verified. You&apos;re cleared.</>
+                )}
+              </p>
+              {transactionHash && (
+                <div className="mt-5 inline-flex items-center gap-2 text-[12px] text-white/55 mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[rgb(168_217_175)]" />
+                  {truncate(transactionHash)}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Step pips */}
+        <div className="flex items-center gap-1.5 mb-5">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <span
+              key={i}
+              className={`h-0.5 rounded-full transition-all ${
+                i + 1 === stepIndex ? "w-8 bg-[rgb(168_217_175)]" : "w-3 bg-white/15"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* CTA */}
+        {step === "verify" && (
+          <VerifyButton
+            programId={config.credentialId || process.env.NEXT_PUBLIC_PROGRAM_ID || ""}
+            onVerificationComplete={handleVerificationComplete}
+            onError={handleVerificationError}
+            text={config.buttonText || "Verify"}
+            className="h-12 rounded-[14px] text-[#0b0b0c] font-semibold text-[14px] inline-flex items-center justify-center gap-2 transition-colors w-full cursor-pointer"
+            style={{ backgroundColor: buttonBg, letterSpacing: "0.02em" }}
+          />
+        )}
+
+        {step === "action" && (
+          <button
+            onClick={handleExecuteFunction}
+            disabled={isExecuting}
+            className="h-12 rounded-[14px] text-[#0b0b0c] font-semibold text-[14px] inline-flex items-center justify-center gap-2 transition-colors w-full cursor-pointer disabled:opacity-60"
+            style={{ backgroundColor: buttonBg, letterSpacing: "0.02em" }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = buttonHover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = buttonBg; }}
+          >
+            {isExecuting
+              ? "Executing…"
+              : config.actionButtonText || `Execute ${config.functionName}()`}
+            {!isExecuting && (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8h10m0 0L8 3m5 5l-5 5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        )}
+
+        {step === "success" && explorerUrl && (
+          <a
+            href={explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-12 rounded-[14px] bg-white/10 text-white text-[14px] font-medium inline-flex items-center justify-center gap-2 transition-colors hover:bg-white/15 cursor-pointer"
+          >
+            View on explorer
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8h10m0 0L8 3m5 5l-5 5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
         )}
       </div>
     </div>

@@ -20,16 +20,14 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: [
-          "var(--font-inter)",
-          "Inter",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "Roboto",
-          "sans-serif",
-        ],
-        cinzel: ["var(--font-cinzel)", "serif"],
+        sans: ["var(--font-sans)", "Geist", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "Geist Mono", "ui-monospace", "monospace"],
+        cinzel: ["var(--font-sans)", "sans-serif"],
+      },
+      borderRadius: {
+        xl: "16px",
+        "2xl": "20px",
+        "3xl": "24px",
       },
       colors: {
         border: "hsl(var(--border))",
