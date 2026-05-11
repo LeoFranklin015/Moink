@@ -5,10 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { useAirkit } from "@/components/AirkitProvider";
 import { LoginButton } from "@/components/common/LoginButton";
 
-const NAV_LINKS = [
+const NAV_LINKS: { href: string; label: string; external?: boolean }[] = [
   { href: "/builder", label: "Builder" },
-  { href: "/test", label: "Diagnostics" },
-  { href: "https://docs.moca.network/airkit", label: "AIRKit Docs", external: true },
 ];
 
 export function Navbar({ floating = true }: { floating?: boolean }) {

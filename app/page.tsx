@@ -55,49 +55,41 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Bento Showcase */}
+      {/* Showcase */}
       <section className="px-4 lg:px-6 pb-12 max-w-[1400px] mx-auto">
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-12 lg:col-span-7 card-mint min-h-[440px] p-8 lg:p-10 fade-up flex flex-col justify-between relative overflow-hidden">
-            <div className="card-mint-inner inline-flex max-w-fit px-4 py-2">
-              <span className="text-[12px] font-medium text-[#0f0f0f]">Composable verification frames</span>
-            </div>
+        <div className="card-mint min-h-[480px] p-8 lg:p-14 fade-up flex flex-col justify-between relative overflow-hidden">
+          <div className="card-mint-inner inline-flex max-w-fit px-4 py-2">
+            <span className="text-[12px] font-medium text-[#0f0f0f]">Composable verification frames</span>
+          </div>
 
-            <div className="relative mt-8 lg:mt-12">
-              <div className="card bg-[#0f0f0f] border-edge-strong p-6 lg:p-8 max-w-md ml-auto rotate-[2deg] shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="w-7 h-7 rounded-full bg-mint" />
-                  <span className="text-[11px] uppercase tracking-[0.08em] text-fg-muted font-medium">moca · age</span>
-                </div>
-                <div className="text-2xl font-semibold tracking-tight text-fg leading-tight mb-3">
-                  Verify you're not 17<br />to claim your reward.
-                </div>
-                <div className="flex items-center gap-2 text-[12px] text-fg-muted mb-6">
-                  <span className="w-1.5 h-1.5 rounded-full bg-mint" />
-                  age must not be 17
-                </div>
-                <button className="btn-mint w-full justify-center pointer-events-none">
-                  Verify &amp; claim
-                  <ArrowRight />
-                </button>
+          <div className="relative mt-8 lg:mt-12 flex justify-end">
+            <div className="card bg-[#0f0f0f] border-edge-strong p-6 lg:p-8 w-full max-w-md rotate-[2deg] shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="w-7 h-7 rounded-full bg-mint" />
+                <span className="text-[11px] uppercase tracking-[0.08em] text-fg-muted font-medium">moca · age</span>
               </div>
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 px-8 pb-7 text-[#0f0f0f]/70 text-sm">
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-[#0f0f0f]/60 mb-1">Embed</div>
-                  <div className="font-medium text-[#0f0f0f] mono">identityx.app/embed/[id]</div>
-                </div>
-                <div className="text-[#0f0f0f]/60 text-xs">720 × 720 · twitter:player</div>
+              <div className="text-2xl font-semibold tracking-tight text-fg leading-tight mb-3">
+                Verify you're not 17<br />to claim your reward.
               </div>
+              <div className="flex items-center gap-2 text-[12px] text-fg-muted mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-mint" />
+                age must not be 17
+              </div>
+              <button className="btn-mint w-full justify-center pointer-events-none">
+                Verify &amp; claim
+                <ArrowRight />
+              </button>
             </div>
           </div>
 
-          <div className="col-span-12 lg:col-span-5 grid grid-cols-1 gap-4">
-            <Stat label="Verifications" value="∞" sub="No friction. Inside the feed." decorate />
-            <Stat label="Auth" value="ES256" sub="Partner JWT · @mocanetwork/airkit 1.8.1" />
-            <Stat label="Settle" value="222888" sub="Moca Testnet" />
+          <div className="absolute bottom-0 left-0 right-0 px-8 lg:px-14 pb-7 text-[#0f0f0f]/70 text-sm">
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.12em] text-[#0f0f0f]/60 mb-1">Embed</div>
+                <div className="font-medium text-[#0f0f0f] mono">identityx.app/embed/[id]</div>
+              </div>
+              <div className="text-[#0f0f0f]/60 text-xs">720 × 720 · twitter:player</div>
+            </div>
           </div>
         </div>
       </section>
@@ -228,22 +220,6 @@ function ArrowRight() {
   );
 }
 
-function Stat({ label, value, sub, decorate }: { label: string; value: string; sub: string; decorate?: boolean }) {
-  return (
-    <div className="card p-6 flex flex-col justify-between min-h-[140px] fade-up relative overflow-hidden">
-      {decorate && (
-        <svg className="absolute -right-4 -bottom-4 w-32 h-32 opacity-30" viewBox="0 0 100 100">
-          <path d="M5 70 Q 25 45, 45 60 T 95 30" stroke="rgb(var(--mint-bright))" strokeWidth="1.5" fill="none" />
-        </svg>
-      )}
-      <span className="section-eyebrow">{label}</span>
-      <div className="relative z-10">
-        <div className="stat-num text-3xl lg:text-4xl font-semibold tracking-tight">{value}</div>
-        <div className="text-xs text-fg-muted mt-1">{sub}</div>
-      </div>
-    </div>
-  );
-}
 
 function StepCard({ n, title, blurb, highlight }: { n: string; title: string; blurb: string; highlight?: boolean }) {
   return (
