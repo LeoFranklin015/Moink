@@ -39,7 +39,7 @@ export default function Home() {
           </h1>
 
           <p className="text-fg-muted text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-10">
-            Let users instantly prove their identity or eligibility using their existing Moca-issued credentials —
+            Let users instantly prove their identity or eligibility using their existing Moca-issued credentials,
             without ever leaving their social feed. More engagement. Less friction. Higher conversions.
           </p>
 
@@ -55,7 +55,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Band: From Awareness to Action — three step */}
+      {/* Band: From Awareness to Action, three step */}
       <section id="how" className="relative">
         <MintRule />
         <div className="px-4 lg:px-6 py-24 lg:py-28 max-w-[1400px] mx-auto">
@@ -63,7 +63,7 @@ export default function Home() {
             <span className="section-eyebrow mb-3 block">How it works</span>
             <h2 className="text-3xl md:text-5xl font-semibold tracking-tight max-w-3xl mx-auto leading-[1.1]">
               From awareness to action
-              <span className="text-mint">—inside Twitter.</span>
+              <span className="text-mint"> inside Twitter.</span>
             </h2>
             <p className="text-fg-muted mt-4 max-w-3xl mx-auto">
               Instead of running ads and hoping users click away to complete steps (leading to drop-offs),
@@ -85,7 +85,7 @@ export default function Home() {
             <StepCard
               n="03"
               title="Unlock Action"
-              blurb="Once verified, users can instantly apply, register, claim, participate, or join—all without leaving Twitter."
+              blurb="Once verified, users can instantly apply, register, claim, participate, or join, all without leaving Twitter."
               highlight
             />
           </div>
@@ -177,7 +177,7 @@ export default function Home() {
 
       <footer className="border-t border-edge">
         <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-8 flex items-center justify-between text-xs text-fg-dim">
-          <span>© identityX — built on Moca Network</span>
+          <span>© identityX · built on Moca Network</span>
           <span>v0.1 · prototype</span>
         </div>
       </footer>

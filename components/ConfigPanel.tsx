@@ -63,7 +63,7 @@ function validateAbi(abi: string, fnName: string): AbiValidation | null {
   const fn = onlyFunctions.find((f) => f.name === fnName);
   if (!fn) {
     const names = onlyFunctions.map((f) => f.name).filter(Boolean).join(", ");
-    return { ok: false, error: `Function "${fnName}" not in ABI. Available: ${names || "—"}` };
+    return { ok: false, error: `Function "${fnName}" not in ABI. Available: ${names || "none"}` };
   }
   return {
     ok: true,
@@ -353,7 +353,7 @@ export function ConfigPanel({ config, updateConfig, step = "verify", onStepChang
         </Section>
         </>}
 
-        {/* SUCCESS-STEP — nothing to configure */}
+        {/* SUCCESS-STEP, nothing to configure */}
         {step === "success" && (
           <div className="rounded-2xl border border-edge bg-surface-2 p-6">
             <div className="section-eyebrow mb-2">Auto-rendered</div>

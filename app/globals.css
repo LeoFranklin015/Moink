@@ -164,7 +164,7 @@
   }
   .btn-ghost:hover:not(:disabled) { background: rgb(var(--raised)); }
 
-  /* Field input — soft, no hard borders */
+  /* Field input. Soft, no hard borders */
   .field-input {
     width: 100%;
     height: 40px;
@@ -199,7 +199,7 @@
     color: rgb(var(--fg-muted));
   }
 
-  /* Section heading — group label */
+  /* Section heading: group label */
   .section-eyebrow {
     font-size: 11px;
     font-weight: 500;

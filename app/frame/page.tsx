@@ -98,7 +98,7 @@ export default function DonatePage({ configId }: { configId: string }) {
     setVerificationResults(results || ({ status: "Compliant" } as VerificationResultData));
     setErrorMessage(null);
 
-    // Parse ABI quietly — only set inputs on success, never clobber errorMessage here.
+    // Parse ABI quietly: only set inputs on success, never clobber errorMessage here.
     try {
       if (config?.abi && config?.functionName) {
         const parsed = JSON.parse(config.abi);
@@ -117,7 +117,7 @@ export default function DonatePage({ configId }: { configId: string }) {
         }
       }
     } catch (err) {
-      // Don't surface ABI errors on the verify screen — let the builder's inline
+      // Don't surface ABI errors on the verify screen. Let the builder's inline
       // validator catch them at config time. Just log.
       console.warn("[frame] ABI parse on verify-complete failed:", err);
     }
@@ -337,7 +337,7 @@ export default function DonatePage({ configId }: { configId: string }) {
   /* ---------- Resolve current step ---------- */
 
   const hasAction = Boolean(config.functionName);
-  // SDK may return "Compliant", "compliant", "VERIFIED", etc. Be lenient — anything
+  // SDK may return "Compliant", "compliant", "VERIFIED", etc. Be lenient: anything
   // that isn't an explicit failure counts as success.
   const statusLower = verificationResults?.status?.toLowerCase() ?? "";
   const isFailure = ["non-compliant", "failed", "error", "rejected", "revoked"].includes(statusLower);

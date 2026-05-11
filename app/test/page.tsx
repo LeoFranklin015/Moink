@@ -81,7 +81,7 @@ export default function TestPage() {
 
       <Navbar />
 
-      {/* Hero — state machine */}
+      {/* Hero, state machine */}
       <section className="px-4 lg:px-6 pt-20 lg:pt-28 pb-24 lg:pb-32 max-w-[1100px] mx-auto">
         <div className="text-center fade-up">
           <span className="section-eyebrow mb-4 block">Try it yourself</span>
@@ -93,14 +93,14 @@ export default function TestPage() {
             {phase === "issued" ? (
               <>Your <span className="text-mint">18+ credential</span> is live.</>
             ) : (
-              <>Prove you're <span className="text-mint">18+</span> — without sharing your age.</>
+              <>Prove you're <span className="text-mint">18+</span>. Without sharing your age.</>
             )}
           </h1>
 
           <p className="text-fg-muted text-base md:text-lg max-w-xl mx-auto mb-10 leading-relaxed">
             {phase === "issued"
               ? "Bound to your AIR account on Moca testnet. Use it on the demo tweet below, or anywhere identityX checks age."
-              : "We'll issue a sample age credential to your AIR account on Moca testnet. Use it to unlock any identityX frame that gates on age — starting with the demo on X."}
+              : "We'll issue a sample age credential to your AIR account on Moca testnet. Use it to unlock any identityX frame that gates on age, starting with the demo on X."}
           </p>
 
           {/* Single state-aware CTA */}
@@ -126,7 +126,7 @@ export default function TestPage() {
 
       <MintRule />
 
-      {/* What's next — two cards */}
+      {/* What's next, two cards */}
       <section className="px-4 lg:px-6 py-24 lg:py-28 max-w-[1100px] mx-auto">
         <div className="text-center mb-12 fade-up">
           <span className="section-eyebrow mb-3 block">What's next</span>
@@ -141,7 +141,7 @@ export default function TestPage() {
             external
             num="01"
             title="See it live on X"
-            blurb="We posted a demo frame on Twitter. Open the tweet, click verify — your fresh credential will satisfy the rule."
+            blurb="We posted a demo frame on Twitter. Open the tweet, click verify, and your fresh credential will satisfy the rule."
             cta="Open the tweet"
             highlight={phase === "issued"}
           />
@@ -157,7 +157,7 @@ export default function TestPage() {
 
       <footer className="border-t border-edge mt-8">
         <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-8 flex items-center justify-between text-xs text-fg-dim">
-          <span>© identityX — built on Moca Network</span>
+          <span>© identityX · built on Moca Network</span>
           <span>v0.1 · prototype</span>
         </div>
       </footer>

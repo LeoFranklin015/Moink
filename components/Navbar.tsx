@@ -46,7 +46,7 @@ export function Navbar({ floating = true }: { floating?: boolean }) {
             style={{ background: "linear-gradient(135deg, rgb(var(--mint)) 0%, rgb(var(--mint-bright)) 100%)" }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              {/* identityX mark — interlocking X with a vertical stroke (i) */}
+              {/* identityX mark: interlocking X with a vertical stroke (i) */}
               <path
                 d="M3.5 3.5l9 9M12.5 3.5l-9 9"
                 stroke="#0b0b0c"

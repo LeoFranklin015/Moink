@@ -35,12 +35,12 @@ const DEFAULT_CONFIG: FrameConfig = {
   logo: "",
   backgroundColor: "#0f0f10",
   backgroundImage: "",
-  title: "MEMBERS ONLY",
+  title: "GOVERNANCE VOTE",
   description:
-    "Prove you're 18+ to claim your spot. One tap, no data shared — just a zero-knowledge proof on Moca.",
+    "Cast your vote on the proposal. Only verified adults can participate. Zero data shared, just a zero-knowledge proof on Moca.",
   credentialId: process.env.NEXT_PUBLIC_PROGRAM_ID || "",
-  verificationRequirement: "Must be 18 or older",
-  buttonText: "PROVE & CLAIM",
+  verificationRequirement: "Must be 18 or older to vote",
+  buttonText: "VERIFY TO VOTE",
   buttonColor: "#a8d9af",
   buttonHoverColor: "#5fcf80",
   contractAddress: "",
@@ -171,16 +171,16 @@ export default function FrameBuilder() {
           <DialogHeader className="px-6 pt-6">
             <DialogTitle className="text-2xl font-semibold tracking-tight">Deploy frame</DialogTitle>
             <DialogDescription className="text-fg-muted mt-1">
-              Persists your config and returns a permanent embed URL. No on-chain action — your wallet stays untouched.
+              Persists your config and returns a permanent embed URL. No on-chain action, your wallet stays untouched.
             </DialogDescription>
           </DialogHeader>
 
           <div className="px-6 pb-6 space-y-4 mt-4">
             <div className="bg-surface-2 rounded-2xl p-4 space-y-2.5 text-sm">
-              <Row k="Title" v={config.title || "—"} />
-              <Row k="Program" v={truncateMid(config.credentialId, 22) || "—"} mono />
-              <Row k="Action" v={config.functionName ? `${config.functionName}()` : "—"} mono />
-              <Row k="Contract" v={truncateMid(config.contractAddress, 22) || "—"} mono />
+              <Row k="Title" v={config.title || "-"} />
+              <Row k="Program" v={truncateMid(config.credentialId, 22) || "-"} mono />
+              <Row k="Action" v={config.functionName ? `${config.functionName}()` : "-"} mono />
+              <Row k="Contract" v={truncateMid(config.contractAddress, 22) || "-"} mono />
             </div>
 
             {saveError && (
@@ -212,7 +212,7 @@ export default function FrameBuilder() {
               </div>
               <div className="text-3xl font-semibold tracking-tight text-[#0f0f0f]">Frame is live</div>
               <p className="text-[#0f0f0f]/70 mt-1 text-sm">
-                Share the URL or post it directly to X — it'll unfurl as a player card.
+                Share the URL or post it directly to X. It'll unfurl as a player card.
               </p>
             </div>
           </div>
@@ -277,7 +277,7 @@ function StepNav({
                 ? "bg-fg text-bg font-semibold"
                 : "text-fg-muted hover:text-fg"
             }`}
-            title={isEmptyAction ? "No action wired — click to configure" : undefined}
+            title={isEmptyAction ? "No action wired. Click to configure" : undefined}
           >
             {it.label}
             {isEmptyAction && !active && (
@@ -306,7 +306,7 @@ function Field({ label, value }: { label: string; value: string }) {
       <div className="field-label">{label}</div>
       <div className="flex items-center bg-surface-2 rounded-xl">
         <code className="flex-1 min-w-0 px-3.5 py-2.5 text-xs mono text-fg overflow-hidden text-ellipsis whitespace-nowrap">
-          {value || "—"}
+          {value || "-"}
         </code>
         <button
           onClick={async () => {

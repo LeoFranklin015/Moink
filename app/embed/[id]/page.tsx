@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import DonatePage from "../../frame/page";
 
 async function getBaseUrl(): Promise<string> {
-  // Prefer the actual host of the incoming request — survives tunnel URL changes.
+  // Prefer the actual host of the incoming request: survives tunnel URL changes.
   try {
     const h = await headers();
     const host = h.get("x-forwarded-host") || h.get("host");
