@@ -1,87 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { createWalletClient, createPublicClient, custom, http } from "viem";
+import Link from "next/link";
 import { useAirkit } from "@/components/AirkitProvider";
 import { getAuthToken } from "@/lib/airkit-auth";
-import { DEFAULT_CHAIN } from "@/utils/constants";
+import { Navbar } from "@/components/Navbar";
 
-// Counter.sol compiled by scripts-compile-counter.mjs (solc 0.8.x):
-//   contract Counter {
-//     uint256 public count;
-//     event Incremented(address indexed by, uint256 newCount);
-//     function increment() external { count++; emit Incremented(msg.sender, count); }
-//   }
-const COUNTER_BYTECODE =
-  "0x6080604052348015600e575f5ffd5b5060f88061001b5f395ff3fe6080604052348015600e575f5ffd5b50600436106030575f3560e01c806306661abd146034578063d09de08a14604d575b5f5ffd5b603b5f5481565b60405190815260200160405180910390f35b60536055565b005b5f80549080606183609f565b90915550505f5460405190815233907f38ac789ed44572701765277c4d0970f2db1c1a571ed39e84358095ae4eaa54209060200160405180910390a2565b5f6001820160bb57634e487b7160e01b5f52601160045260245ffd5b506001019056fea26469706673582212204fde9ebd3bcfa44a37f1998beffbb4bad0674de6b4abf96e7da736adb21be0b164736f6c63430008230033";
-
-const COUNTER_ABI = [
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "address", name: "by", type: "address" },
-      { indexed: false, internalType: "uint256", name: "newCount", type: "uint256" },
-    ],
-    name: "Incremented",
-    type: "event",
-  },
-  { inputs: [], name: "count", outputs: [{ internalType: "uint256", name: "", type: "uint256" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "increment", outputs: [], stateMutability: "nonpayable", type: "function" },
-] as const;
-
-const ISSUER_DID    = process.env.NEXT_PUBLIC_ISSUER_DID!;
+const ISSUER_DID = process.env.NEXT_PUBLIC_ISSUER_DID!;
 const CREDENTIAL_ID = process.env.NEXT_PUBLIC_CREDENTIAL_ID!;
-const PROGRAM_ID    = process.env.NEXT_PUBLIC_PROGRAM_ID!;
-const PARTNER_ID    = process.env.NEXT_PUBLIC_PARTNER_ID!;
 
-type Log = { ts: string; level: "info" | "ok" | "err"; msg: string };
+// TODO: replace with the real demo tweet URL when ready.
+const DEMO_TWEET_URL = "#tweet";
+
+type Phase = "need-login" | "ready" | "issuing" | "issued" | "error";
 
 export default function TestPage() {
-  const { service, isInitialized, isLoggedIn, address, login, logout } = useAirkit();
-  const [logs, setLogs] = useState<Log[]>([]);
+  const { service, isInitialized, isLoggedIn, address, login } = useAirkit();
   const [busy, setBusy] = useState(false);
+  const [issuedAt, setIssuedAt] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const log = (msg: string, level: Log["level"] = "info") =>
-    setLogs((l) => [...l, { ts: new Date().toISOString().slice(11, 23), level, msg }]);
+  const phase: Phase = !isInitialized
+    ? "need-login"
+    : errorMsg
+      ? "error"
+      : busy
+        ? "issuing"
+        : issuedAt
+          ? "issued"
+          : !isLoggedIn
+            ? "need-login"
+            : "ready";
 
-  const onLogin = async () => {
+  const onConnect = async () => {
     setBusy(true);
-    try { log("login: calling login()"); await login(); log("login ok", "ok"); }
-    catch (e) { log(`login error: ${(e as Error).message}`, "err"); }
-    finally { setBusy(false); }
-  };
-
-  const onLogout = async () => {
-    setBusy(true);
-    try { await logout(); log("logout ok", "ok"); }
-    catch (e) { log(`logout error: ${(e as Error).message}`, "err"); }
-    finally { setBusy(false); }
-  };
-
-  const onDeployCounter = async () => {
-    if (!service) return;
-    setBusy(true);
+    setErrorMsg(null);
     try {
-      const provider = await service.getProvider();
-      const wallet = createWalletClient({ transport: custom(provider), chain: DEFAULT_CHAIN });
-      const pub = createPublicClient({ chain: DEFAULT_CHAIN, transport: http() });
-      const [account] = await wallet.getAddresses();
-
-      log(`deploy: chain=${DEFAULT_CHAIN.name} (${DEFAULT_CHAIN.id})`);
-      log(`deploy: from ${account}`);
-      log(`deploy: sending Counter creation tx...`);
-      const txHash = await wallet.deployContract({
-        abi: COUNTER_ABI,
-        bytecode: COUNTER_BYTECODE as `0x${string}`,
-        account,
-      });
-      log(`deploy: tx ${txHash} — waiting for receipt...`);
-      const receipt = await pub.waitForTransactionReceipt({ hash: txHash });
-      if (!receipt.contractAddress) throw new Error("no contractAddress in receipt");
-      log(`deploy ok. contract=${receipt.contractAddress}`, "ok");
-      log(`paste this into builder Contract Address: ${receipt.contractAddress}`);
+      await login();
     } catch (e) {
-      log(`deploy error: ${(e as Error).message}`, "err");
+      setErrorMsg(e instanceof Error ? e.message : "Connect failed");
     } finally {
       setBusy(false);
     }
@@ -90,93 +47,260 @@ export default function TestPage() {
   const onIssue = async () => {
     if (!service) return;
     setBusy(true);
+    setErrorMsg(null);
     try {
-      log(`issue: credentialId=${CREDENTIAL_ID}`);
-      const token = await getAuthToken("issue");
-      const r = await service.issueCredential({
-        authToken: token,
+      const jwt = await getAuthToken("issue");
+      await service.issueCredential({
+        authToken: jwt,
         issuerDid: ISSUER_DID,
         credentialId: CREDENTIAL_ID,
         credentialSubject: { id: `did:example:test-${Date.now()}`, age: 25 },
       });
-      log(`issue ok. result=${JSON.stringify(r)}`, "ok");
-    } catch (e) { log(`issue error: ${(e as Error).message}`, "err"); }
-    finally { setBusy(false); }
+      setIssuedAt(new Date().toISOString());
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : "Issuance failed");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const onVerify = async () => {
-    if (!service) return;
-    setBusy(true);
-    try {
-      log(`verify: programId=${PROGRAM_ID}`);
-      const token = await getAuthToken("verify");
-      const r = await service.verifyCredential({ authToken: token, programId: PROGRAM_ID });
-      log(`verify ok. status=${r.verificationResult?.status}`, "ok");
-    } catch (e) { log(`verify error: ${(e as Error).message}`, "err"); }
-    finally { setBusy(false); }
-  };
+  const truncate = (s?: string | null) =>
+    !s ? "" : s.length <= 14 ? s : `${s.slice(0, 6)}…${s.slice(-4)}`;
 
   return (
-    <main style={{ maxWidth: 880, margin: "32px auto", padding: 24 }}>
-      <h1 style={{ marginTop: 0 }}>AIRKit test</h1>
+    <main className="min-h-screen relative">
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div
+          className="absolute inset-0 opacity-70"
+          style={{
+            background:
+              "radial-gradient(60% 50% at 80% -10%, rgb(var(--mint) / 0.14), transparent 60%), radial-gradient(40% 40% at 0% 100%, rgb(var(--mint-bright) / 0.08), transparent 60%)",
+          }}
+        />
+      </div>
 
-      <section style={card}>
-        <h3 style={{ margin: "0 0 12px" }}>State</h3>
-        <Row k="Partner ID" v={PARTNER_ID} />
-        <Row k="Issuer DID" v={ISSUER_DID} />
-        <Row k="Credential ID" v={CREDENTIAL_ID} />
-        <Row k="Program ID" v={PROGRAM_ID} />
-        <Row k="AirService" v={isInitialized ? "initialized" : "initializing..."} />
-        <Row k="Logged in" v={isLoggedIn ? "yes" : "no"} />
-        <Row k="Address" v={address ?? "—"} />
-      </section>
+      <Navbar />
 
-      <section style={{ ...card, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Btn disabled={!isInitialized || isLoggedIn || busy} onClick={onLogin}>Login</Btn>
-        <Btn disabled={!isInitialized || !isLoggedIn || busy} onClick={onLogout}>Logout</Btn>
-        <Btn disabled={!isInitialized || !isLoggedIn || busy} onClick={onIssue}>Issue (age: 25)</Btn>
-        <Btn disabled={!isInitialized || !isLoggedIn || busy} onClick={onVerify}>Verify</Btn>
-        <Btn disabled={!isInitialized || !isLoggedIn || busy} onClick={onDeployCounter}>Deploy Counter</Btn>
-      </section>
+      {/* Hero — state machine */}
+      <section className="px-4 lg:px-6 pt-20 lg:pt-28 pb-24 lg:pb-32 max-w-[1100px] mx-auto">
+        <div className="text-center fade-up">
+          <span className="section-eyebrow mb-4 block">Try it yourself</span>
 
-      <section style={card}>
-        <h3 style={{ margin: "0 0 12px" }}>Logs</h3>
-        <div style={{
-          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-          fontSize: 12, lineHeight: 1.55, whiteSpace: "pre-wrap", maxHeight: 360, overflow: "auto",
-          background: "#0b0b0b", color: "#e6e6e6", padding: 12, borderRadius: 6,
-        }}>
-          {logs.length === 0 ? <span style={{ opacity: 0.6 }}>(empty)</span> : logs.map((l, i) => (
-            <div key={i} style={{ color: l.level === "err" ? "#ff6b6b" : l.level === "ok" ? "#7bd88f" : "#9ad9ff" }}>
-              <span style={{ opacity: 0.6 }}>[{l.ts}]</span> {l.msg}
-            </div>
-          ))}
+          <h1
+            className="text-fg font-semibold tracking-tight leading-[1.04] mb-5"
+            style={{ fontSize: "clamp(36px, 6vw, 64px)" }}
+          >
+            {phase === "issued" ? (
+              <>You hold an <span className="text-mint">age credential</span>.</>
+            ) : (
+              <>Get a sample <span className="text-mint">age credential</span>.</>
+            )}
+          </h1>
+
+          <p className="text-fg-muted text-base md:text-lg max-w-xl mx-auto mb-10 leading-relaxed">
+            {phase === "issued"
+              ? "Issued to your AIR account on Moca testnet. Use it on any identityX frame that checks age — including the one we posted on X."
+              : "We'll issue a real age-25 credential to your AIR account on Moca testnet. Use it on any identityX frame that checks age."}
+          </p>
+
+          {/* Single state-aware CTA */}
+          <div className="inline-flex flex-col items-center gap-3">
+            <CtaForPhase
+              phase={phase}
+              onConnect={onConnect}
+              onIssue={onIssue}
+              busy={busy}
+            />
+
+            {/* Tiny status line */}
+            <StatusLine
+              phase={phase}
+              address={address}
+              issuedAt={issuedAt}
+              errorMsg={errorMsg}
+              truncate={truncate}
+            />
+          </div>
         </div>
       </section>
+
+      <MintRule />
+
+      {/* What's next — two cards */}
+      <section className="px-4 lg:px-6 py-24 lg:py-28 max-w-[1100px] mx-auto">
+        <div className="text-center mb-12 fade-up">
+          <span className="section-eyebrow mb-3 block">What's next</span>
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            Use it. Or build your own.
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NextCard
+            href={DEMO_TWEET_URL}
+            external
+            num="01"
+            title="See it live on X"
+            blurb="We posted a demo frame on Twitter. Open the tweet, click verify — your fresh credential will satisfy the rule."
+            cta="Open the tweet"
+            highlight={phase === "issued"}
+          />
+          <NextCard
+            href="/builder"
+            num="02"
+            title="Create your own frame"
+            blurb="Compose any credential check + wire a contract function. Save it, drop the URL on X, settle on-chain."
+            cta="Open the builder"
+          />
+        </div>
+      </section>
+
+      <footer className="border-t border-edge mt-8">
+        <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-8 flex items-center justify-between text-xs text-fg-dim">
+          <span>© identityX — built on Moca Network</span>
+          <span>v0.1 · prototype</span>
+        </div>
+      </footer>
     </main>
   );
 }
 
-const card: React.CSSProperties = { border: "1px solid #e5e5e5", borderRadius: 8, padding: 16, marginBottom: 16 };
+/* ---------- Pieces ---------- */
 
-function Row({ k, v }: { k: string; v: string }) {
+function CtaForPhase({
+  phase, onConnect, onIssue, busy,
+}: { phase: Phase; onConnect: () => void; onIssue: () => void; busy: boolean }) {
+  if (phase === "need-login") {
+    return (
+      <button onClick={onConnect} disabled={busy} className="btn-mint h-11 px-6 text-sm cursor-pointer">
+        Connect AIR account
+        <Arrow />
+      </button>
+    );
+  }
+  if (phase === "ready") {
+    return (
+      <button onClick={onIssue} disabled={busy} className="btn-mint h-11 px-6 text-sm cursor-pointer">
+        Issue credential
+        <Arrow />
+      </button>
+    );
+  }
+  if (phase === "issuing") {
+    return (
+      <button disabled className="btn-mint h-11 px-6 text-sm cursor-not-allowed opacity-60">
+        <Spinner />
+        Issuing…
+      </button>
+    );
+  }
+  if (phase === "issued") {
+    return (
+      <span className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-mint text-[#0b0b0c] text-sm font-semibold">
+        <Check />
+        Credential issued
+      </span>
+    );
+  }
+  // error
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 8, fontSize: 13, padding: "4px 0" }}>
-      <div style={{ color: "#666" }}>{k}</div>
-      <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", wordBreak: "break-all" }}>{v}</div>
+    <button onClick={onIssue} className="btn-mint h-11 px-6 text-sm cursor-pointer">
+      Try again
+      <Arrow />
+    </button>
+  );
+}
+
+function StatusLine({
+  phase, address, issuedAt, errorMsg, truncate,
+}: { phase: Phase; address: string | null; issuedAt: string | null; errorMsg: string | null; truncate: (s?: string | null) => string }) {
+  if (phase === "need-login") return null;
+  if (phase === "error") {
+    return (
+      <div className="mono text-[12px] text-[rgb(245_140_140)] max-w-md text-center">
+        {errorMsg}
+      </div>
+    );
+  }
+  if (phase === "issued") {
+    return (
+      <div className="mono text-[12px] text-fg-muted">
+        age = 25 · holder <span className="text-fg">{truncate(address)}</span> · {new Date(issuedAt!).toLocaleTimeString()}
+      </div>
+    );
+  }
+  return (
+    <div className="mono text-[12px] text-fg-dim">
+      connected as <span className="text-fg-muted">{truncate(address)}</span>
     </div>
   );
 }
 
-function Btn({ children, disabled, onClick }: { children: React.ReactNode; disabled?: boolean; onClick: () => void }) {
+function NextCard({
+  href, external, num, title, blurb, cta, highlight,
+}: {
+  href: string; external?: boolean; num: string; title: string; blurb: string; cta: string; highlight?: boolean;
+}) {
+  const className = `card p-7 lg:p-8 min-h-[220px] flex flex-col justify-between card-hover group ${
+    highlight ? "ring-1 ring-[rgb(var(--mint)/0.45)]" : ""
+  }`;
+
+  const inner = (
+    <>
+      <div className="flex items-center justify-between mb-8">
+        <span className="section-eyebrow">№ {num}</span>
+        {highlight && <span className="chip chip-mint">Ready</span>}
+      </div>
+      <div>
+        <h3 className="text-2xl font-semibold tracking-tight mb-2">{title}</h3>
+        <p className="text-sm text-fg-muted leading-relaxed mb-6">{blurb}</p>
+        <span className="inline-flex items-center gap-2 text-sm text-fg group-hover:text-mint transition-colors">
+          {cta}
+          <Arrow />
+        </span>
+      </div>
+    </>
+  );
+
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {inner}
+      </a>
+    );
+  }
+  return <Link href={href} className={className}>{inner}</Link>;
+}
+
+function MintRule() {
   return (
-    <button
-      disabled={disabled} onClick={onClick}
-      style={{
-        padding: "8px 14px", borderRadius: 6, border: "1px solid #ccc",
-        background: disabled ? "#f3f3f3" : "#111", color: disabled ? "#888" : "#fff",
-        cursor: disabled ? "not-allowed" : "pointer", fontSize: 14,
-      }}
-    >{children}</button>
+    <div className="flex items-center justify-center">
+      <span className="block w-16 h-px bg-mint" />
+    </div>
+  );
+}
+
+function Arrow() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M3 8h10m0 0L8 3m5 5l-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="animate-spin" width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <path d="M14 8a6 6 0 00-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function Check() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M3.5 8.5l3 3 6-7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

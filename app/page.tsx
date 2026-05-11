@@ -25,7 +25,7 @@ export default function Home() {
       <Navbar />
 
       {/* Hero */}
-      <section className="px-4 lg:px-6 pt-16 lg:pt-24 pb-16 max-w-[1400px] mx-auto">
+      <section className="px-4 lg:px-6 pt-16 lg:pt-24 pb-28 lg:pb-32 max-w-[1400px] mx-auto">
         <div className="text-center max-w-5xl mx-auto fade-up">
           <span className="chip chip-dark mb-7">
             <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--mint-bright))]" />
@@ -55,42 +55,47 @@ export default function Home() {
         </div>
       </section>
 
-      {/* From Awareness to Action — three step */}
-      <section id="how" className="px-4 lg:px-6 py-20 max-w-[1400px] mx-auto">
-        <div className="text-center mb-14 fade-up">
-          <span className="section-eyebrow mb-3 block">How it works</span>
-          <h2 className="text-3xl md:text-5xl font-semibold tracking-tight max-w-3xl mx-auto leading-[1.1]">
-            From awareness to action
-            <span className="text-mint">—inside Twitter.</span>
-          </h2>
-          <p className="text-fg-muted mt-4 max-w-3xl mx-auto">
-            Instead of running ads and hoping users click away to complete steps (leading to drop-offs),
-            let users take verified actions directly within their Twitter feed.
-          </p>
-        </div>
+      {/* Band: From Awareness to Action — three step */}
+      <section id="how" className="relative">
+        <MintRule />
+        <div className="px-4 lg:px-6 py-24 lg:py-28 max-w-[1400px] mx-auto">
+          <div className="text-center mb-14 fade-up">
+            <span className="section-eyebrow mb-3 block">How it works</span>
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight max-w-3xl mx-auto leading-[1.1]">
+              From awareness to action
+              <span className="text-mint">—inside Twitter.</span>
+            </h2>
+            <p className="text-fg-muted mt-4 max-w-3xl mx-auto">
+              Instead of running ads and hoping users click away to complete steps (leading to drop-offs),
+              let users take verified actions directly within their Twitter feed.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StepCard
-            n="01"
-            title="Choose an Intent"
-            blurb="Select from KYC status checks, loyalty verification, on-chain achievements, or any Moca-issued identity proof for your campaign."
-          />
-          <StepCard
-            n="02"
-            title="Frame Triggers Proof"
-            blurb="Users already have their identity and credentials from Moca Identity. We verify the proof on-demand, seamlessly inside the Frame."
-          />
-          <StepCard
-            n="03"
-            title="Unlock Action"
-            blurb="Once verified, users can instantly apply, register, claim, participate, or join—all without leaving Twitter."
-            highlight
-          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StepCard
+              n="01"
+              title="Choose an Intent"
+              blurb="Select from KYC status checks, loyalty verification, on-chain achievements, or any Moca-issued identity proof for your campaign."
+            />
+            <StepCard
+              n="02"
+              title="Frame Triggers Proof"
+              blurb="Users already have their identity and credentials from Moca Identity. We verify the proof on-demand, seamlessly inside the Frame."
+            />
+            <StepCard
+              n="03"
+              title="Unlock Action"
+              blurb="Once verified, users can instantly apply, register, claim, participate, or join—all without leaving Twitter."
+              highlight
+            />
+          </div>
         </div>
       </section>
 
-      {/* Two-column benefits */}
-      <section className="px-4 lg:px-6 py-12 max-w-[1400px] mx-auto">
+      {/* Band: Two-column benefits */}
+      <section className="relative">
+        <MintRule />
+        <div className="px-4 lg:px-6 py-24 lg:py-28 max-w-[1400px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <BenefitsCard
             eyebrow="For Operators"
@@ -116,60 +121,75 @@ export default function Home() {
             tone="mint"
           />
         </div>
-      </section>
-
-      {/* Use cases */}
-      <section id="use-cases" className="px-4 lg:px-6 py-20 max-w-[1400px] mx-auto">
-        <div className="text-center mb-12 fade-up">
-          <span className="section-eyebrow mb-3 block">Example intents</span>
-          <h3 className="text-3xl md:text-5xl font-semibold tracking-tight">Pick one. Or compose your own.</h3>
-          <p className="text-fg-muted mt-4 max-w-2xl mx-auto">
-            Choose from these popular verification intents or create custom ones for your specific business needs.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <UseCase title="Check KYC Status" desc="Verify identity compliance and regulatory requirements." />
-          <UseCase title="Verify Loyalty" desc="Confirm membership status and reward eligibility." />
-          <UseCase title="On-chain Achievements" desc="Validate blockchain credentials and NFT ownership." />
-          <UseCase title="Social Verification" desc="Prove engagement and community participation." />
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-4 lg:px-6 py-20 max-w-[1400px] mx-auto">
-        <div className="card-mint p-10 lg:p-16 text-center fade-up relative overflow-hidden">
-          <h3 className="text-3xl md:text-5xl font-semibold tracking-tight text-[#0f0f0f] mb-4 max-w-3xl mx-auto leading-[1.1]">
-            Ready to convert users inside Twitter?
-          </h3>
-          <p className="text-[#0f0f0f]/70 text-lg max-w-2xl mx-auto mb-8">
-            Join forward-thinking businesses using identityX to turn social attention into verified
-            actions with Moca Identity's trust layer.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/builder"
-              className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-full bg-[#0f0f0f] text-mint text-sm font-medium hover:bg-black transition-colors"
-            >
-              Start building frames
-              <ArrowRight />
-            </Link>
-            <Link
-              href="/test"
-              className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-full bg-white/40 text-[#0f0f0f] text-sm font-medium hover:bg-white/60 transition-colors"
-            >
-              Schedule demo
-            </Link>
+      {/* Band: Use cases */}
+      <section id="use-cases" className="relative">
+        <MintRule />
+        <div className="px-4 lg:px-6 py-24 lg:py-28 max-w-[1400px] mx-auto">
+          <div className="text-center mb-12 fade-up">
+            <span className="section-eyebrow mb-3 block">Example intents</span>
+            <h3 className="text-3xl md:text-5xl font-semibold tracking-tight">Pick one. Or compose your own.</h3>
+            <p className="text-fg-muted mt-4 max-w-2xl mx-auto">
+              Choose from these popular verification intents or create custom ones for your specific business needs.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <UseCase title="Check KYC Status" desc="Verify identity compliance and regulatory requirements." />
+            <UseCase title="Verify Loyalty" desc="Confirm membership status and reward eligibility." />
+            <UseCase title="On-chain Achievements" desc="Validate blockchain credentials and NFT ownership." />
+            <UseCase title="Social Verification" desc="Prove engagement and community participation." />
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-edge mt-12">
+      {/* Band: CTA */}
+      <section className="relative">
+        <MintRule />
+        <div className="px-4 lg:px-6 py-24 lg:py-28 max-w-[1400px] mx-auto">
+          <div className="card-mint p-10 lg:p-16 text-center fade-up relative overflow-hidden">
+            <h3 className="text-3xl md:text-5xl font-semibold tracking-tight text-[#0f0f0f] mb-4 max-w-3xl mx-auto leading-[1.1]">
+              Ready to convert users inside Twitter?
+            </h3>
+            <p className="text-[#0f0f0f]/70 text-lg max-w-2xl mx-auto mb-8">
+              Join forward-thinking businesses using identityX to turn social attention into verified
+              actions with Moca Identity&apos;s trust layer.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/builder"
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-full bg-[#0f0f0f] text-mint text-sm font-medium hover:bg-black transition-colors"
+              >
+                Start building frames
+                <ArrowRight />
+              </Link>
+              <Link
+                href="/test"
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-full bg-white/40 text-[#0f0f0f] text-sm font-medium hover:bg-white/60 transition-colors"
+              >
+                Schedule demo
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-edge">
         <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-8 flex items-center justify-between text-xs text-fg-dim">
           <span>© identityX — built on Moca Network</span>
           <span>v0.1 · prototype</span>
         </div>
       </footer>
     </main>
+  );
+}
+
+function MintRule() {
+  return (
+    <div className="flex items-center justify-center pt-12 lg:pt-16">
+      <span className="block w-16 h-px bg-mint" />
+    </div>
   );
 }
 

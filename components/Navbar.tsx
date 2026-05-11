@@ -6,6 +6,7 @@ import { useAirkit } from "@/components/AirkitProvider";
 import { LoginButton } from "@/components/common/LoginButton";
 
 const NAV_LINKS: { href: string; label: string; external?: boolean }[] = [
+  { href: "/test", label: "Demo" },
   { href: "/builder", label: "Builder" },
 ];
 
