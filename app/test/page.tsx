@@ -91,16 +91,16 @@ export default function TestPage() {
             style={{ fontSize: "clamp(36px, 6vw, 64px)" }}
           >
             {phase === "issued" ? (
-              <>You hold an <span className="text-mint">age credential</span>.</>
+              <>Your <span className="text-mint">18+ credential</span> is live.</>
             ) : (
-              <>Get a sample <span className="text-mint">age credential</span>.</>
+              <>Prove you're <span className="text-mint">18+</span> — without sharing your age.</>
             )}
           </h1>
 
           <p className="text-fg-muted text-base md:text-lg max-w-xl mx-auto mb-10 leading-relaxed">
             {phase === "issued"
-              ? "Issued to your AIR account on Moca testnet. Use it on any identityX frame that checks age — including the one we posted on X."
-              : "We'll issue a real age-25 credential to your AIR account on Moca testnet. Use it on any identityX frame that checks age."}
+              ? "Bound to your AIR account on Moca testnet. Use it on the demo tweet below, or anywhere identityX checks age."
+              : "We'll issue a sample age credential to your AIR account on Moca testnet. Use it to unlock any identityX frame that gates on age — starting with the demo on X."}
           </p>
 
           {/* Single state-aware CTA */}
